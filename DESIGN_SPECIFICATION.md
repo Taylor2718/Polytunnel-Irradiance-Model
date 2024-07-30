@@ -6,8 +6,9 @@ This is a Python codebase which models the effect of solar irradiance on a polyt
 
 ## Repository Structure
 
-```
-poly-tunnel-irradiance/
+```bash
+#!/bin/bash
+polytunnel-irradiance-model/
 ├── README.md
 ├── DESIGN_SPECIFICATION.md
 ├── FUNCTIONAL_SPECIFICATION.md
@@ -17,21 +18,21 @@ poly-tunnel-irradiance/
 ├── docs/
 ```
 
-## Modules 
+## Modules
 
 ### 1. geometry.py
 
-Defines geometry of polytunnel and ground surface. 
+Defines geometry of polytunnel and ground surface.
 
 ### 2. ray_tracing.py
 
-Calculates irradiance from trace rays directed from the sun. 
+Calculates irradiance from trace rays directed from the sun.
 
 ### 3. visualisation.py
 
 Constructs grid view of irradiance returned by ray tracing program.
 
-### 4. main.py 
+### 4. main.py
 
 Runs complete irradiance model.
 

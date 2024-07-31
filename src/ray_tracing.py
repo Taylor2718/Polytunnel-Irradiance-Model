@@ -1,39 +1,37 @@
 import numpy as np
 
-class Sun:
-    def __init__(self, altitude, azimuth):
-        self.altitude = np.radians(altitude)
-        self.azimuth = np.radians(azimuth)
-        self.direction = self.calculate_direction()
-
-    def calculate_direction(self):
-            return np.array([
-                np.cos(self.altitude) * np.cos(self.azimuth),
-                np.cos(self.altitude) * np.sin(self.azimuth),
-                np.sin(self.altitude)
-            ])
-    
 class RayTracer:
-    def __init__(self, tunnel, sun):
-        self.tunnel = tunnel
+    def __init__(self, polytunnel):
+        """
+        Initializes the RayTracer class for calculating solar irradiance on the polytunnel ground.
         
-    def trace_rays(self, ground_x, ground_y):
-        radius = self.tunnel.radius
-        length = self.tunnel.length
-        sun_direction = self.sun.calculate_direction
+        :param polytunnel: Instance of the Polytunnel class.
+        """
+        self.polytunnel = polytunnel
 
-        # Initialize the irradiance grid
-        irradiance = np.zeros_like(ground_x)
+    def trace_rays(self, ground_grid_x, ground_grid_y, sun_positions):
 
-        for i in range(ground_x.shape[0]):
-            for j in range(ground_x.shape[1]):
-                point = np.array([ground_x[i, j], ground_y[i, j], 0])
-                ray_origin = point + sun_direction * 100  # Trace the ray backwards
+        irradiance = np.zeros_like(ground_grid_x)
 
-                # Check if the ray intersects with the poly tunnel
-                if (ray_origin[1] ** 2 + ray_origin[2] ** 2) <= radius ** 2:
-                    irradiance[i, j] = 1  # Simplified irradiance value
-
+        for altitude, azimuth in sun_positions:
+            if altitude > 0:  # Only consider the sun positions where the sun is above the horizon
+                irradiance += self.calculate_irradiance(ground_grid_x, ground_grid_y, altitude, azimuth)
+        
         return irradiance
 
-    
+    def calculate_irradiance(self, ground_grid_x, ground_grid_y, altitude, azimuth):
+
+        # Convert altitude and azimuth to radians
+        altitude_rad = np.radians(altitude)
+        azimuth_rad = np.radians(azimuth)
+        
+        # Compute the direction cosines of the sun rays
+        sun_dir_x = np.sin(azimuth_rad) * np.cos(altitude_rad)
+        sun_dir_y = np.cos(azimuth_rad) * np.cos(altitude_rad)
+        sun_dir_z = np.sin(altitude_rad)
+
+        # Calculate the projection of the sun direction on the ground plane
+        dot_product = sun_dir_x * ground_grid_x + sun_dir_y * ground_grid_y + sun_dir_z * self.polytunnel.radius
+        irradiance_contribution = np.maximum(dot_product, 0)  # Only positive contributions
+
+        return irradiance_contribution

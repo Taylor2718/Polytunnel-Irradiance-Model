@@ -24,17 +24,21 @@ polytunnel-irradiance-model/
 
 Defines geometry of polytunnel and ground surface.
 
-### 2. ray_tracing.py
+### 2. sun.py
+
+Calculates sun's altitude and azimuth from specified location.
+
+### 3. ray_tracing.py
 
 Calculates irradiance from trace rays directed from the sun.
 
-### 3. visualisation.py
+### 4. visualisation.py
 
 Constructs grid view of irradiance returned by ray tracing program.
 
-### 4. main.py
+### 5. main.py
 
-Runs complete irradiance model.
+Runs complete irradiance model along with visualisations.
 
 ## Authors
 

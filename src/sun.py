@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import pvlib
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
@@ -38,3 +39,17 @@ class Sun:
         azimuth_array = solar_position['azimuth'].values
         
         return altitude_array, azimuth_array
+
+    def generate_sun_vecs(self, sun_positions):
+        
+        sun_vecs = []
+        for altitude, azimuth in sun_positions:
+            azimuth_rad = np.radians(azimuth)
+            altitude_rad = np.radians(altitude)
+            sun_dir_x = np.sin(azimuth_rad) * np.cos(altitude_rad)
+            sun_dir_y = np.cos(azimuth_rad) * np.cos(altitude_rad)
+            sun_dir_z = np.sin(altitude_rad)
+            sun_vec = np.array([sun_dir_x, sun_dir_y, sun_dir_z])
+            sun_vecs.append(sun_vec)
+
+        return sun_vecs

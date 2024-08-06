@@ -10,9 +10,11 @@ class Polytunnel:
         self.n = int(n_points)
 
     def generate_ground_grid(self):
-        x = np.arange(-self.length / 2, self.length / 2, self.n)
-        y = np.arange(-self.radius, self.radius, self.n)
-        return np.meshgrid(x, y)
+        x_ground = np.arange(-self.length / 2, self.length / 2, self.n)
+        y_ground = np.arange(-self.radius, self.radius, self.n)
+
+        X, Y = np.meshgrid(x_ground, y_ground)
+        return (X, Y)
     
     def generate_surface(self):
         # Create the grid in cylindrical coordinates
@@ -27,6 +29,26 @@ class Polytunnel:
         Z = self.radius * np.sin(Theta)  # Height above the ground
 
         return (X, Y, Z)
+    
+    def generate_distances_grid(self, ground_grid, surface_grid):
+        X_ground, Y_ground = ground_grid
+        X, Y, Z = surface_grid
+
+        dist = np.sqrt(((X-X_ground)**2) + ((Y-Y_ground)**2) + ((Z)**2))
+    
+        return dist
+
+    def vec_grid(self, surface):
+
+        X, Y, Z = surface
+        surface_grid = np.empty(X.shape + (3,))
+    
+        # Iterate over the rows and columns of the grid
+        for i in range(X.shape[0]):
+            for j in range(X.shape[1]):
+                surface_grid[i, j] = [X[i, j], Y[i, j], Z[i, j]]
+        
+        return surface_grid
     
     def surface_element_unit_vectors(self):
         
@@ -46,3 +68,12 @@ class Polytunnel:
         normals_unit = normals / normals_magnitude
 
         return normals_unit
+    
+    def surface_tilt(self, normals):
+
+        tilt = np.arccos(normals[:][2])
+
+        return tilt
+
+    
+    

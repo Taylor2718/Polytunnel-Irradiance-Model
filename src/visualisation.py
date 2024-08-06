@@ -66,6 +66,19 @@ def plot_surface(X, Y, Z, normals_unit, sun_vec):
           color='b', label='Sun Rays')
     plt.show()
 
+def plot_irradiance(ground_grid_x, ground_grid_y, irradiance_array):
+    # Create a figure and axis
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    # Initialize the contour plot
+    contour = ax.contourf(ground_grid_x, ground_grid_y, irradiance_array, levels=100, cmap='hot')
+    cbar = fig.colorbar(contour, ax=ax, label='Irradiance')
+
+    ax.set_xlabel('Width (m)')
+    ax.set_ylabel('Length (m)')
+    ax.set_title('Irradiance Pattern on the Polytunnel surface')
+    plt.show()
+
 def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_array):
     # Create a figure and axis
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -76,7 +89,7 @@ def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_arra
 
     ax.set_xlabel('Width (m)')
     ax.set_ylabel('Length (m)')
-    ax.set_title('Irradiance Pattern on the Ground Surface of the Poly Tunnel')
+    ax.set_title('Irradiance Pattern on the Polytunnel surface')
 
     def update(frame):
         ax.clear()

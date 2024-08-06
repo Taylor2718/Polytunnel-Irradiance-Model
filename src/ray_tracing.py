@@ -8,7 +8,20 @@ class RayTracer:
         :param polytunnel: Instance of the Polytunnel class.
         """
         self.polytunnel = polytunnel
-
+    """""
+    def sun_surface_az_alt(self, sun_vecs, surface_vecs, distance_array):
+        az_array = []
+        alt_array = []
+        for i in range(len(surface_vecs)):
+            for j in range(len())
+            c = (distance_array[i] * sun_vecs[i]) - surface_vecs[j]
+            x, y, z = c
+            az = np.degrees(np.arctan2(x, y))
+            alt = np.degrees(np.arcsin(z / np.sqrt(x**2 + y**2 + z**2)))
+            az_array.append(az)
+            alt_array.append(alt)
+        return az_array, alt_array
+    """""
     def irradiance_rays(self, normals_unit, sun_positions, sun_vecs):
 
         irradiance = []
@@ -20,9 +33,11 @@ class RayTracer:
                 irradiance.append(self.calculate_irradiance(normals_unit, sun_vec))
 
         return irradiance
-
+    
     def calculate_irradiance(self, normals_unit, sun_vec):
-        
+    
         irradiance_surface = 1000 * np.tensordot(normals_unit, sun_vec, axes=(0, 0))
         
         return irradiance_surface
+    
+   

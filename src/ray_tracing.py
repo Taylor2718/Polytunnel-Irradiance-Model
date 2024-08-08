@@ -22,7 +22,7 @@ class RayTracer:
             alt_array.append(alt)
         return az_array, alt_array
     """""
-    def irradiance_rays(self, normals_unit, sun_positions, sun_vecs):
+    def irradiance_rays(self, normals_unit, sun_positions, sun_vecs, irradiance_frames):
 
         irradiance = []
 
@@ -30,13 +30,13 @@ class RayTracer:
             altitude = sun_positions[i][0]
             if altitude > 0:
                 sun_vec = sun_vecs[i]
-                irradiance.append(self.calculate_irradiance(normals_unit, sun_vec))
-
+                calc = self.calculate_irradiance(normals_unit, sun_vec, irradiance_frames[i])
+                irradiance.append(calc)
         return irradiance
     
-    def calculate_irradiance(self, normals_unit, sun_vec):
-    
-        irradiance_surface = 1000 * np.tensordot(normals_unit, sun_vec, axes=(0, 0))
+    def calculate_irradiance(self, normals_unit, sun_vec, spectral_irradiance):
+        
+        irradiance_surface = np.clip((spectral_irradiance * np.tensordot(normals_unit, sun_vec, axes=(0, 0))), a_min = 0, a_max = None)
         
         return irradiance_surface
     

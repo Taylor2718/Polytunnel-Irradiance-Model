@@ -5,6 +5,7 @@ from sun import Sun
 from ray_tracing import RayTracer
 import visualisation as viz
 
+
 def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:59Z', latitude=51.1950, longitude=0.2757, res_minutes = 1, n_points = 1000, length = 20, radius = 5):
     
     # Create Polytunnel instance
@@ -27,17 +28,18 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     sun_positions = list(zip(altitude_array, azimuth_array))
     sun_vecs = sun.generate_sun_vecs(sun_positions)
     normals_unit = tunnel.surface_element_unit_vectors()
-    tilt_unit = tunnel.surface_tilt(normals_unit)
+    tilts_unit = tunnel.surface_tilt(normals_unit)
     trans_sun_vecs = sun.generate_sun_vec_grids(sun_vecs, surface_grid, distance_array)
 
-    irradiance_frames = ray_tracer.irradiance_rays(normals_unit, sun_positions, sun_vecs)
+    spectra = sun.get_spectra(tilts_unit[0][0], 400, 700)
+    irradiance_frames = ray_tracer.irradiance_rays(normals_unit, sun_positions, sun_vecs, spectra[1])
     print(f"Number of frames: {len(irradiance_frames)}")
+    
+    viz.plot_spectra(time_array, spectra)
+    
+    #viz.plot_sun_positions(time_array, altitude_array, azimuth_array)
 
-    print(len(distance_grid))
-
-    viz.plot_sun_positions(time_array, altitude_array, azimuth_array)
-
-    viz.plot_surface(ground_grid_x, ground_grid_y, ground_grid_z, normals_unit, sun_vecs[-1])
+    #viz.plot_surface(ground_grid_x, ground_grid_y, ground_grid_z, normals_unit, sun_vecs[-1])
 
     viz.plot_irradiance(ground_grid_x, ground_grid_y, irradiance_frames[-1])
     

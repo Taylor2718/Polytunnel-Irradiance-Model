@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import matplotlib.colors as mcolors
 import numpy as np
 from datetime import datetime, timedelta
 
@@ -83,17 +84,21 @@ def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_arra
     # Create a figure and axis
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    # Initialize the contour plot
-    contour = ax.contourf(ground_grid_x, ground_grid_y, irradiance_array[0], levels=100, cmap='hot')
-    cbar = fig.colorbar(contour, ax=ax, label='Irradiance')
+   # Find the global min and max of the irradiance array
+    irradiance_min = 0
+    irradiance_max = np.max(irradiance_array)
+    list_index = next(i for i, sublist in enumerate(irradiance_array) if irradiance_max in sublist)
 
+    # Initialize the contour plot with the first frame, using the global min and max for color limits
+    contour = ax.contourf(ground_grid_x, ground_grid_y, irradiance_array[list_index], levels=100, cmap='hot', vmin=irradiance_min, vmax=irradiance_max)
+    cbar = fig.colorbar(contour, ax=ax, label='Irradiance')
     ax.set_xlabel('Width (m)')
     ax.set_ylabel('Length (m)')
     ax.set_title('Irradiance Pattern on the Polytunnel surface')
 
     def update(frame):
         ax.clear()
-        contour = ax.contourf(ground_grid_x, ground_grid_y, irradiance_array[frame], levels=100, cmap='hot')
+        contour = ax.contourf(ground_grid_x, ground_grid_y, irradiance_array[frame], levels=100, cmap='hot', vmin=irradiance_min, vmax=irradiance_max)
         ax.set_xlabel('Width (m)')
         ax.set_ylabel('Length (m)')
         ax.set_title(f'Irradiance Pattern on the Ground Surface of the Poly Tunnel - Time {round_10_min(time_array[frame])}')
@@ -105,4 +110,17 @@ def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_arra
     # Save the animation
     anim.save('figures/irradiance-tunnel-surface-animation.mp4', writer='ffmpeg')
 
+    plt.show()
+
+def plot_spectra(time_array, spectra):
+   
+    plt.figure()
+
+    for i in range(len(spectra)):
+        plt.plot((spectra[0][i])['wavelength'], (spectra[0][i])['poa_global'])
+    
+    plt.show()
+
+    plt.figure()
+    plt.plot(time_array, spectra[1])
     plt.show()

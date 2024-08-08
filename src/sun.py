@@ -4,6 +4,8 @@ import pvlib
 from pvlib import spectrum, solarposition, irradiance, atmosphere
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+from scipy.integrate import trapezoid
+
 
 class Sun:
     def __init__(self, start_time='2024-07-30T00:00:00Z', end_time='2024-07-30T23:59:59Z', latitude = 51.1950, longitude = 0.2757, altitude=0, resolution_minutes=1):
@@ -91,37 +93,53 @@ class Sun:
 
         return X_array, Y_array, Z_array
 
-
-    def get_spectra(self):
+    def get_spectra(self, tilt, integration_region_q1, integration_region_q2):
   # assumptions from the technical report:
         times = self.get_times()
         lat = self.latitude
         lon = self.longitude
-        tilt = 37
+        tilt = tilt
         azimuth = 180
         pressure = 101300  # sea level, roughly
         water_vapor_content = 0.5  # cm
         tau500 = 0.1
         ozone = 0.31  # atm-cm
         albedo = 0.2
-
-        solpos = solarposition.get_solarposition(times, lat, lon)
-        aoi = irradiance.aoi(tilt, azimuth, solpos.apparent_zenith, solpos.azimuth)
-
-        # The technical report uses the 'kasten1966' airmass model, but later
-        # versions of SPECTRL2 use 'kastenyoung1989'.  Here we use 'kasten1966'
-        # for consistency with the technical report.
-        relative_airmass = atmosphere.get_relative_airmass(solpos.apparent_zenith,
-                                                        model='kasten1966')
         
-        spectra = spectrum.spectrl2(
-            apparent_zenith=solpos.apparent_zenith,
-            aoi=aoi,
-            surface_tilt=tilt,
-            ground_albedo=albedo,
-            surface_pressure=pressure,
-            relative_airmass=relative_airmass,
-            precipitable_water=water_vapor_content,
-            ozone=ozone,
-            aerosol_turbidity_500nm=tau500,
-        )
+        spectra_frames = []
+        spectral_irradiance_frames = []
+        for i in range(len(times)):
+            solpos = solarposition.get_solarposition(times[i], lat, lon)
+            aoi = irradiance.aoi(tilt, azimuth, solpos.apparent_zenith, solpos.azimuth)
+
+            # The technical report uses the 'kasten1966' airmass model, but later
+            # versions of SPECTRL2 use 'kastenyoung1989'.  Here we use 'kasten1966'
+            # for consistency with the technical report.
+            relative_airmass = atmosphere.get_relative_airmass(solpos.apparent_zenith,
+                                                            model='kasten1966')
+            print(relative_airmass)
+            
+            spectra = spectrum.spectrl2(
+                apparent_zenith=solpos.apparent_zenith,
+                aoi=aoi,
+                surface_tilt=tilt,
+                ground_albedo=albedo,
+                surface_pressure=pressure,
+                relative_airmass=relative_airmass,
+                precipitable_water=water_vapor_content,
+                ozone=ozone,
+                aerosol_turbidity_500nm=tau500,
+            )
+            wavelengths = spectra['wavelength']
+            intensities = spectra['poa_global'].flatten()
+        
+            optical_mask = (wavelengths >= integration_region_q1) & (wavelengths <= integration_region_q2)
+            optical_wavelengths = wavelengths[optical_mask]
+            optical_intensities = np.nan_to_num(intensities[optical_mask], nan=0.0)
+ 
+            integral = trapezoid(optical_intensities, optical_wavelengths, 0.01)
+            spectra_frames.append(spectra)
+            spectral_irradiance_frames.append(integral)
+
+        return spectra_frames, spectral_irradiance_frames
+    

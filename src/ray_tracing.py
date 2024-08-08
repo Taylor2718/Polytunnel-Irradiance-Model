@@ -27,11 +27,9 @@ class RayTracer:
         irradiance = []
 
         for i in range(len(sun_positions)):
-            altitude = sun_positions[i][0]
-            if altitude > 0:
-                sun_vec = sun_vecs[i]
-                calc = self.calculate_irradiance(normals_unit, sun_vec, irradiance_frames[i])
-                irradiance.append(calc)
+            sun_vec = sun_vecs[i]
+            calc = self.calculate_irradiance(normals_unit, sun_vec, irradiance_frames[i])
+            irradiance.append(calc)
         return irradiance
     
     def calculate_irradiance(self, normals_unit, sun_vec, spectral_irradiance):

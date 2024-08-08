@@ -117,7 +117,6 @@ class Sun:
             # for consistency with the technical report.
             relative_airmass = atmosphere.get_relative_airmass(solpos.apparent_zenith,
                                                             model='kasten1966')
-            print(relative_airmass)
             
             spectra = spectrum.spectrl2(
                 apparent_zenith=solpos.apparent_zenith,

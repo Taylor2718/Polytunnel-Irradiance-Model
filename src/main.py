@@ -10,15 +10,17 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     
     # Create Polytunnel instance
     tunnel = Polytunnel(radius=radius, length=length, n_points=n_points)
-    ground_grid_x = tunnel.generate_surface()[0]
-    ground_grid_y = tunnel.generate_surface()[1]
-    ground_grid_z = tunnel.generate_surface()[2]
+    surface_grid_x = tunnel.generate_surface()[0]
+    surface_grid_y = tunnel.generate_surface()[1]
+    ground_grid = tunnel.generate_ground_grid()
 
     # Create Sun instance and generate sun positions
     sun = Sun(start_time=start_time_str, end_time=end_time_str, latitude=latitude, longitude=longitude, resolution_minutes=res_minutes)
     altitude_array, azimuth_array = sun.generate_sun_positions()
     distance_array = sun.generate_sun_distance()
-    ground_grid = tunnel.generate_ground_grid()
+    ground_grid_x = tunnel.generate_ground_grid()[0]
+    ground_grid_y = tunnel.generate_ground_grid()[1]
+
     surface_grid = tunnel.generate_surface()
     distance_grid = tunnel.generate_distances_grid(ground_grid, surface_grid)
     vecs = tunnel.vec_grid(surface_grid)
@@ -33,17 +35,30 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     spectra = sun.get_spectra(tilts_unit[0][0], 400, 700)
     irradiance_frames = ray_tracer.irradiance_rays(normals_unit, sun_positions, sun_vecs, spectra[1])
-    print(f"Number of frames: {len(irradiance_frames)}")
     
-    viz.plot_spectra(time_array, spectra)
+    diffuse_irradiance_frames = ray_tracer.diffuse_irradiance_ground(distance_grid, irradiance_frames, 0.1)
+    print(f"Number of frames: {len(irradiance_frames)}")
+    print(irradiance_frames[0][0][0])
+    print(ground_grid[0][10][10])
+    print(ground_grid[1][10][10])
+    print(surface_grid[0][0][0])
+    print(surface_grid[1][0][0])
+    print(surface_grid[2][0][0])
+    print(distance_grid[10][10][0][0])
+    print(diffuse_irradiance_frames[0])
+
+    #viz.plot_spectra(time_array, spectra)
     
     #viz.plot_sun_positions(time_array, altitude_array, azimuth_array)
 
     #viz.plot_surface(ground_grid_x, ground_grid_y, ground_grid_z, normals_unit, sun_vecs[-1])
 
-    viz.plot_irradiance(ground_grid_x, ground_grid_y, irradiance_frames[-1])
+    #viz.plot_irradiance(ground_grid_x, ground_grid_y, irradiance_frames[-1])
     
-    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_frames)
+    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, irradiance_frames)
+    
+    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames)
+
 
 if __name__ == '__main__':
     import sys

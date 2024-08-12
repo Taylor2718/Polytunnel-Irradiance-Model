@@ -8,20 +8,7 @@ class RayTracer:
         :param polytunnel: Instance of the Polytunnel class.
         """
         self.polytunnel = polytunnel
-    """""
-    def sun_surface_az_alt(self, sun_vecs, surface_vecs, distance_array):
-        az_array = []
-        alt_array = []
-        for i in range(len(surface_vecs)):
-            for j in range(len())
-            c = (distance_array[i] * sun_vecs[i]) - surface_vecs[j]
-            x, y, z = c
-            az = np.degrees(np.arctan2(x, y))
-            alt = np.degrees(np.arcsin(z / np.sqrt(x**2 + y**2 + z**2)))
-            az_array.append(az)
-            alt_array.append(alt)
-        return az_array, alt_array
-    """""
+
     def irradiance_rays(self, normals_unit, sun_positions, sun_vecs, irradiance_frames):
 
         irradiance = []
@@ -37,5 +24,39 @@ class RayTracer:
         irradiance_surface = np.clip((spectral_irradiance * np.tensordot(normals_unit, sun_vec, axes=(0, 0))), a_min = 0, a_max = None)
         
         return irradiance_surface
+    
+    def diffuse_irradiance_ground(self, distances_grid, irradiance_frames, diffusivity_ratio):
+
+        diffuse_irradiance_frames = []
+
+        ground_shape = (len(distances_grid), len(distances_grid[0]))
+        
+        for j in range(len(irradiance_frames)):
+            irradiance_ground = np.zeros(ground_shape)
+
+            # Iterate over each point on the ground grid
+            for p in range(ground_shape[0]):
+                for q in range(ground_shape[1]):
+                    total_irradiance = 0.0
+                    
+                    # Iterate over each point on the surface grid
+                    surface_shape = irradiance_frames[j].shape
+                    for k in range(surface_shape[0]):
+                        for l in range(surface_shape[1]):
+                            # Sum the irradiance contribution from each surface point
+                            distance = distances_grid[p][q][k][l]
+                            if distance > 0:  # Avoid division by zero
+                                total_irradiance += diffusivity_ratio*irradiance_frames[j][k][l] / distance
+                    
+                    # Store the result in the irradiance_ground array
+                    irradiance_ground[p][q] = total_irradiance
+        
+            diffuse_irradiance_frames.append(irradiance_ground)
+
+        return diffuse_irradiance_frames
+
+        
+
+        
     
    

@@ -10,15 +10,15 @@ class Polytunnel:
         self.n = int(n_points)
 
     def generate_ground_grid(self):
-        x_ground = np.arange(-self.length / 2, self.length / 2, self.n)
-        y_ground = np.arange(-self.radius, self.radius, self.n)
+        y_ground = np.linspace(-self.length, self.length, self.n)
+        x_ground = np.linspace(-self.radius+0.01, self.radius-0.01, self.n)
 
         X, Y = np.meshgrid(x_ground, y_ground)
         return (X, Y)
     
     def generate_surface(self):
         # Create the grid in cylindrical coordinates
-        y = np.linspace(0, self.length, self.n)
+        y = np.linspace(-self.length, self.length, self.n)
         theta = np.linspace(0, np.pi, self.n)  # Semi-circular cross-section
 
         # Create a meshgrid for Y and Theta
@@ -31,12 +31,28 @@ class Polytunnel:
         return (X, Y, Z)
     
     def generate_distances_grid(self, ground_grid, surface_grid):
+        
         X_ground, Y_ground = ground_grid
-        X, Y, Z = surface_grid
+        X_surface, Y_surface, Z_surface = surface_grid
+        
+        distances_list = []
 
-        dist = np.sqrt(((X-X_ground)**2) + ((Y-Y_ground)**2) + ((Z)**2))
-    
-        return dist
+        # Iterate over each point on the ground grid
+        for i in range(X_ground.shape[0]):
+            row_distances = []
+            for j in range(X_ground.shape[1]):
+                # Extract the ground point
+                ground_point = np.array([X_ground[i, j], Y_ground[i, j], 0])
+
+                # Compute the distance from this ground point to all surface points
+                distances = np.sqrt((X_surface - ground_point[0])**2 + 
+                                    (Y_surface - ground_point[1])**2 + 
+                                    Z_surface**2)
+                
+                row_distances.append(distances)
+            distances_list.append(row_distances)
+        
+        return distances_list
 
     def vec_grid(self, surface):
 

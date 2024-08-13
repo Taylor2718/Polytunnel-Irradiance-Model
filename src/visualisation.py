@@ -30,7 +30,7 @@ def round_10_min(dt):
 
 def plot_sun(time_array, altitude_array, azimuth_array, irradiance_frames, filename):
 
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(10, 8))
     plt.subplot(3, 1, 1)
     plt.plot(time_array, altitude_array, label='Altitude', color='orange')
     plt.xlabel('Time')

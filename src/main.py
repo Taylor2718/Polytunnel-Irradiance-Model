@@ -50,9 +50,9 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     print(separation_unit_vector_grid[0][0][5][5])
 
         
-    #viz.plot_sun(time_array, altitude_array, azimuth_array, spectra_frames, "figures/sun.png")
+    viz.plot_sun(time_array, altitude_array, azimuth_array, spectra_frames, "figures/sun.png")
 
-    #viz.plot_surface(surface_grid_x, surface_grid_y, surface_grid_z, normals_unit_surface, ground_grid_x, ground_grid_y, ground_grid_z, normals_unit_ground, sun_vecs[-1])
+    viz.plot_surface(surface_grid_x, surface_grid_y, surface_grid_z, normals_unit_surface, ground_grid_x, ground_grid_y, ground_grid_z, normals_unit_ground, sun_vecs[-1])
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
     

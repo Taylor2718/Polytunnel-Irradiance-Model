@@ -28,32 +28,42 @@ def round_10_min(dt):
     
     return dt
 
-def plot_sun_positions(time_array, altitude_array, azimuth_array):
+def plot_sun(time_array, altitude_array, azimuth_array, irradiance_frames, filename):
 
     plt.figure(figsize=(10, 5))
-    plt.subplot(2, 1, 1)
+    plt.subplot(3, 1, 1)
     plt.plot(time_array, altitude_array, label='Altitude', color='orange')
     plt.xlabel('Time')
     plt.ylabel('Altitude (degrees)')
     plt.title('Solar Altitude Over Time')
     plt.legend()
     
-    plt.subplot(2, 1, 2)
+    plt.subplot(3, 1, 2)
     plt.plot(time_array, azimuth_array, label='Azimuth', color='blue')
     plt.xlabel('Time')
     plt.ylabel('Azimuth (degrees)')
     plt.title('Solar Azimuth Over Time')
     plt.legend()
+
+    plt.subplot(3, 1, 3)
+    plt.plot(time_array, irradiance_frames, label='Irradiance', color='red')
+    plt.xlabel('Time')
+    plt.ylabel(r"Irradiance $\left(\frac{W}{m^{2}}\right)$")
+    plt.title('Solar Irradiance Over Time')
+    plt.legend()
     
     plt.tight_layout()
-    plt.savefig("figures/solar-positions.png")
+    plt.savefig(filename)
     plt.show()
 
-def plot_surface(X, Y, Z, normals_unit, sun_vec):
+def plot_surface(X, Y, Z, normals_unit, X_ground, Y_ground, Z_ground, normals_unit_ground, sun_vec):
         # Normal vectors at the center points
     U = normals_unit[0]
     V = normals_unit[1]
     W = normals_unit[2]
+    U_ground = normals_unit_ground[0]
+    V_ground = normals_unit_ground[1]
+    W_ground = normals_unit_ground[2]
     sun_dir_x = sun_vec[0]
     sun_dir_y = sun_vec[1]
     sun_dir_z = sun_vec[2]
@@ -61,10 +71,14 @@ def plot_surface(X, Y, Z, normals_unit, sun_vec):
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.6)
-    ax.quiver(X, Y, Z, U, V, W, length=1, color='r')
+    ax.plot_surface(X_ground, Y_ground, Z_ground, cmap='viridis', alpha=0.6)
+
+    ax.quiver(X_ground, Y_ground, Z_ground, U_ground, V_ground, W_ground, length=1, color='b')
+    ax.quiver(X, Y, Z, U, V, W, length=1, color='g')
+
     ax.quiver(X, Y, Z, 
           sun_dir_x, sun_dir_y, sun_dir_z, 
-          color='b', label='Sun Rays')
+          color='red', label='Sun Rays')
     plt.show()
 
 def plot_irradiance(ground_grid_x, ground_grid_y, irradiance_array):
@@ -80,7 +94,7 @@ def plot_irradiance(ground_grid_x, ground_grid_y, irradiance_array):
     ax.set_title('Irradiance Pattern on the Polytunnel surface')
     plt.show()
 
-def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_array):
+def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_array, filename):
     # Create a figure and axis
     fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -94,33 +108,26 @@ def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_arra
     cbar = fig.colorbar(contour, ax=ax, label='Irradiance')
     ax.set_xlabel('Width (m)')
     ax.set_ylabel('Length (m)')
-    ax.set_title('Irradiance Pattern on the Polytunnel surface')
+    ax.set_title('Irradiance')
 
     def update(frame):
         ax.clear()
         contour = ax.contourf(ground_grid_x, ground_grid_y, irradiance_array[frame], levels=100, cmap='hot', vmin=irradiance_min, vmax=irradiance_max)
         ax.set_xlabel('Width (m)')
         ax.set_ylabel('Length (m)')
-        ax.set_title(f'Irradiance Pattern on the Ground Surface of the Poly Tunnel - Time {round_10_min(time_array[frame])}')
+        ax.set_title(f'Irradiance Grid - Time {round_10_min(time_array[frame])}')
         return contour,
 
     # Create the animation
     anim = FuncAnimation(fig, update, frames=len(irradiance_array), interval=50, blit=True)
 
     # Save the animation
-    anim.save('figures/irradiance-tunnel-surface-animation.mp4', writer='ffmpeg')
+    anim.save(filename, writer='ffmpeg')
 
     plt.show()
 
 def plot_spectra(time_array, spectra):
    
     plt.figure()
-
-    for i in range(len(spectra)):
-        plt.plot((spectra[0][i])['wavelength'], (spectra[0][i])['poa_global'])
-    
-    plt.show()
-
-    plt.figure()
-    plt.plot(time_array, spectra[1])
+    plt.plot(time_array, spectra)
     plt.show()

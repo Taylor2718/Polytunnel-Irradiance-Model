@@ -106,7 +106,6 @@ class Sun:
         ozone = 0.31  # atm-cm
         albedo = 0.2
         
-        spectra_frames = []
         spectral_irradiance_frames = []
         for i in range(len(times)):
             solpos = solarposition.get_solarposition(times[i], lat, lon)
@@ -137,8 +136,7 @@ class Sun:
             optical_intensities = np.nan_to_num(intensities[optical_mask], nan=0.0)
  
             integral = trapezoid(optical_intensities, optical_wavelengths, 0.01)
-            spectra_frames.append(spectra)
             spectral_irradiance_frames.append(integral)
 
-        return spectra_frames, spectral_irradiance_frames
+        return spectral_irradiance_frames
     

@@ -25,7 +25,7 @@ class RayTracer:
         
         return irradiance_surface
     
-    def diffuse_irradiance_ground(self, distances_grid, irradiance_frames, diffusivity_ratio):
+    def diffuse_irradiance_ground(self, distances_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, surface_areas, irradiance_frames, transmissivity):
 
         diffuse_irradiance_frames = []
 
@@ -37,6 +37,7 @@ class RayTracer:
             # Iterate over each point on the ground grid
             for p in range(ground_shape[0]):
                 for q in range(ground_shape[1]):
+                    
                     total_irradiance = 0.0
                     
                     # Iterate over each point on the surface grid
@@ -45,8 +46,11 @@ class RayTracer:
                         for l in range(surface_shape[1]):
                             # Sum the irradiance contribution from each surface point
                             distance = distances_grid[p][q][k][l]
-                            if distance > 0:  # Avoid division by zero
-                                total_irradiance += diffusivity_ratio*irradiance_frames[j][k][l] / distance
+                            ground_projection = np.dot(normals_unit_ground[:, p, q], separation_unit_vector_grid[p][q][k][l])
+                            surface_projection = np.dot(normals_unit_surface[:, k, l], separation_unit_vector_grid[p][q][k][l])
+
+                            irradiance = (1-transmissivity) * ground_projection * surface_projection * surface_areas[k][l] * irradiance_frames[j][k][l] / (2*np.pi*(distance)**2)
+                            total_irradiance += irradiance
                     
                     # Store the result in the irradiance_ground array
                     irradiance_ground[p][q] = total_irradiance

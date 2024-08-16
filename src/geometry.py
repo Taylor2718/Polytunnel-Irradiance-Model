@@ -150,36 +150,3 @@ class Polytunnel:
         tilt = np.arccos(normals[:][2])
 
         return tilt
-
-    def generate_angle_grid(self, ground_grid, surface_grid, ground_unit_vectors, surface_unit_vectors):
-    
-        X_ground, Y_ground, Z_ground = ground_grid
-        X_surface, Y_surface, Z_surface = surface_grid
-        
-        # Initialize a 4D array to store the angles
-        angles_grid = np.zeros((X_ground.shape[0], X_ground.shape[1], X_surface.shape[0], X_surface.shape[1]))
-
-        # Iterate over each point on the ground grid
-        for i in range(X_ground.shape[0]):
-            for j in range(X_ground.shape[1]):
-                # Extract the ground point and the corresponding unit vector
-                ground_point = np.array([X_ground[i, j], Y_ground[i, j], Z_ground[i, j]])
-                ground_unit_vector = ground_unit_vectors[:, i, j]
-                
-                # Iterate over each point on the surface grid
-                for k in range(X_surface.shape[0]):
-                    for l in range(X_surface.shape[1]):
-                        # Extract the surface point and corresponding unit vector
-                        surface_point = np.array([X_surface[k, l], Y_surface[k, l], Z_surface[k, l]])
-                        surface_unit_vector = surface_unit_vectors[:, k, l]
-                        
-                        # Normalize the translated surface vector to ensure it's a unit vector
-                        surface_unit_vector /= np.linalg.norm(surface_unit_vector)
-                        
-                        # Compute the dot product
-                        dot_product = np.dot(ground_unit_vector, surface_unit_vector)
-                        
-                        # Store the result in the 4D grid
-                        angles_grid[i][j][k][l] = dot_product
-        
-        return angles_grid

@@ -56,8 +56,32 @@ def plot_sun(time_array, altitude_array, azimuth_array, irradiance_frames, filen
     plt.savefig(filename)
     plt.show()
 
+def set_axes_equal(ax):
+    ''' 
+    Set the 3D plot axes to have equal scale so that spheres appear as spheres,
+    and cubes as cubes, etc. This is one possible solution to Matplotlib's lack
+    of a set_aspect method for 3D plots.
+    '''
+    x_limits = ax.get_xlim3d()
+    y_limits = ax.get_ylim3d()
+    z_limits = ax.get_zlim3d()
+
+    x_range = x_limits[1] - x_limits[0]
+    y_range = y_limits[1] - y_limits[0]
+    z_range = z_limits[1] - z_limits[0]
+
+    max_range = np.array([x_range, y_range, z_range]).max()
+
+    mid_x = np.mean(x_limits)
+    mid_y = np.mean(y_limits)
+    mid_z = np.mean(z_limits)
+
+    ax.set_xlim3d([mid_x - max_range / 2, mid_x + max_range / 2])
+    ax.set_ylim3d([mid_y - max_range / 2, mid_y + max_range / 2])
+    ax.set_zlim3d([mid_z - max_range / 2, mid_z + max_range / 2])
+
 def plot_surface(X, Y, Z, normals_unit, X_ground, Y_ground, Z_ground, normals_unit_ground, sun_vec):
-        # Normal vectors at the center points
+    # Normal vectors at the center points
     U = normals_unit[0]
     V = normals_unit[1]
     W = normals_unit[2]
@@ -70,15 +94,25 @@ def plot_surface(X, Y, Z, normals_unit, X_ground, Y_ground, Z_ground, normals_un
 
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.6)
-    ax.plot_surface(X_ground, Y_ground, Z_ground, cmap='viridis', alpha=0.6)
+    
+    # Plot surfaces with custom colors
+    ax.plot_surface(X, Y, Z, color='gray', alpha=0.4)  # Polytunnel surface
+    ax.plot_surface(X_ground, Y_ground, Z_ground, color='brown', alpha=0.6)  # Ground surface
 
-    ax.quiver(X_ground, Y_ground, Z_ground, U_ground, V_ground, W_ground, length=1, color='b')
-    ax.quiver(X, Y, Z, U, V, W, length=1, color='g')
+    # Plot normal vectors
+    ax.quiver(X_ground, Y_ground, Z_ground, U_ground, V_ground, W_ground, length=1, color='green')
+    #ax.quiver(X, Y, Z, U, V, W, length=1, color='black')
 
-    ax.quiver(X, Y, Z, 
-          sun_dir_x, sun_dir_y, sun_dir_z, 
-          color='red', label='Sun Rays')
+    # Plot sun rays
+    #ax.quiver(X, Y, Z, sun_dir_x, sun_dir_y, sun_dir_z, color='red')
+
+    # Remove grid and axes
+    ax.grid(False)
+    ax.axis('off')
+
+    # Set equal aspect ratio for the axes
+    set_axes_equal(ax)
+
     plt.show()
 
 def plot_irradiance(ground_grid_x, ground_grid_y, irradiance_array):

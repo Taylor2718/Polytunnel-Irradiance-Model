@@ -1,6 +1,6 @@
 import numpy as np
 from sun import Sun
-class RayTracer:
+class TunnelIrradiance:
     def __init__(self, polytunnel):
         """
         Initializes the RayTracer class for calculating solar irradiance on the polytunnel ground.
@@ -71,7 +71,7 @@ class RayTracer:
 
         return direct_irradiance_frames
     
-    def ray_trace(self, ground_grid, surface_grid, distances_grid, sun_vecs, irradiance_frames):
+    def ray_trace(self, ground_grid, surface_grid, distances_grid, sun_vecs, irradiance_frames, transmissivity):
         
         ground_shape =  (len(distances_grid), len(distances_grid[0]))
         irradiance_traced = []
@@ -118,7 +118,7 @@ class RayTracer:
                         closest_j = 0
                         closest_k = 0
 
-                    irradiance_grid[closest_j][closest_k] =+ irradiance_point
+                    irradiance_grid[closest_j][closest_k] =+ transmissivity * irradiance_point
 
             irradiance_traced.append(irradiance_grid)
                     

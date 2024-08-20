@@ -2,7 +2,7 @@
 import numpy as np
 from geometry import Polytunnel
 from sun import Sun
-from ray_tracing import RayTracer
+from irradiance import TunnelIrradiance
 import visualisation as viz
 
 
@@ -29,20 +29,20 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     distance_grid, separation_unit_vector_grid = tunnel.generate_distances_grid(ground_grid, surface_grid)
     time_array = sun.get_times()
 
-    ray_tracer = RayTracer(tunnel)
+    irradiance = TunnelIrradiance(tunnel)
     sun_positions = list(zip(altitude_array, azimuth_array))
     sun_vecs = sun.generate_sun_vecs(sun_positions)
 
     spectra_frames = sun.get_spectra(tilts_unit[0][0], 400, 700)
-    irradiance_frames = ray_tracer.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
-    diffuse_irradiance_frames = ray_tracer.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
-    direct_irradiance_frames = ray_tracer.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
-    global_irradiance_frames = ray_tracer.global_irradiance_ground(direct_irradiance_frames, diffuse_irradiance_frames)
-    irradiance_traced = ray_tracer.ray_trace(ground_grid, surface_grid, distance_grid, sun_vecs, irradiance_frames)
+    irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
+    diffuse_irradiance_frames = irradiance.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
+    direct_irradiance_frames = irradiance.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
+    global_irradiance_frames = irradiance.global_irradiance_ground(direct_irradiance_frames, diffuse_irradiance_frames)
+    irradiance_traced = irradiance.ray_trace(ground_grid, surface_grid, distance_grid, sun_vecs, irradiance_frames, transmissivity)
 
-    power_ground_diffuse, power_total_ground_diffuse = ray_tracer.power(areas_ground, diffuse_irradiance_frames)
-    power_surface, power_total_surface = ray_tracer.power(areas_surface, irradiance_frames)
-    power_ground_direct, power_total_ground_direct = ray_tracer.power(areas_ground, irradiance_traced)
+    power_ground_diffuse, power_total_ground_diffuse = irradiance.power(areas_ground, diffuse_irradiance_frames)
+    power_surface, power_total_surface = irradiance.power(areas_surface, irradiance_frames)
+    power_ground_direct, power_total_ground_direct = irradiance.power(areas_ground, irradiance_traced)
     power_total_out = np.array(power_total_ground_diffuse) + np.array(power_total_ground_direct)
 
     i = 72
@@ -57,13 +57,13 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
     
-    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
+    viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
     
     #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
 
-    #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_traced, "figures/direct-irradiance-ground-animation.mp4")
+    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_traced, "figures/direct-irradiance-ground-animation.mp4")
 
-    #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, global_irradiance_frames, "figures/global-irradiance-ground-animation.mp4")
+    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, global_irradiance_frames, "figures/global-irradiance-ground-animation.mp4")
 
     viz.plot_power(time_array, power_total_surface, power_total_ground_diffuse, power_total_ground_direct, power_total_out, 'figures/power-received.png')
     

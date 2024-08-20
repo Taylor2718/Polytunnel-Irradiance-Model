@@ -38,41 +38,35 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     diffuse_irradiance_frames = ray_tracer.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
     direct_irradiance_frames = ray_tracer.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
     global_irradiance_frames = ray_tracer.global_irradiance_ground(direct_irradiance_frames, diffuse_irradiance_frames)
-    #ray_tracer_ground = ray_tracer.ray_surface_to_ground(surface_grid, ground_grid, sun_vecs, irradiance_frames, 0)
-    
+    irradiance_traced = ray_tracer.ray_trace(ground_grid, surface_grid, distance_grid, sun_vecs, irradiance_frames)
+
+    power_ground_diffuse, power_total_ground_diffuse = ray_tracer.power(areas_ground, diffuse_irradiance_frames)
+    power_surface, power_total_surface = ray_tracer.power(areas_surface, irradiance_frames)
+    power_ground_direct, power_total_ground_direct = ray_tracer.power(areas_ground, irradiance_traced)
+    power_total_out = np.array(power_total_ground_diffuse) + np.array(power_total_ground_direct)
+
+    i = 72
+    print(altitude_array[i])
+    print(time_array[i])
+    print(sun_vecs[i])
     print(f"Number of frames: {len(irradiance_frames)}")
-
-    ground_projection = np.dot(normals_unit_ground[:, 0, 0], separation_unit_vector_grid[0][0][5][5])
-    surface_projection = np.dot(normals_unit_surface[:, 5, 5], separation_unit_vector_grid[0][0][5][5])
-
-    print(time_array[72])
-    print(sun_vecs[72])
-    print(sun_vecs[72][1])
-    print(normals_unit_surface[:, 0, 5])
-    print(np.dot(normals_unit_ground[:, 0, 0], sun_vecs[72]))
-    print(ground_projection)
-    print(surface_projection)
-    print(separation_unit_vector_grid[0][0][5][5])
-
-    print(ground_grid_x[8][4])  
-    print(surface_grid_x[8][4])  
     
-    print(direct_irradiance_frames[73][5][5])
-    viz.plot_sun(time_array, altitude_array, azimuth_array, spectra_frames, "figures/sun.png")
+    #viz.plot_sun(time_array, altitude_array, azimuth_array, spectra_frames, "figures/sun.png")
 
-    viz.plot_surface(surface_grid_x, surface_grid_y, surface_grid_z, normals_unit_surface, ground_grid_x, ground_grid_y, ground_grid_z, normals_unit_ground, sun_vec=sun_vecs[72])
+    #viz.plot_surface(surface_grid_x, surface_grid_y, surface_grid_z, normals_unit_surface, ground_grid_x, ground_grid_y, ground_grid_z, normals_unit_ground, sun_vec=sun_vecs[72])
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
     
-    viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
+    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
     
-    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
+    #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
 
-    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, direct_irradiance_frames, "figures/direct-irradiance-ground-animation.mp4")
+    #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_traced, "figures/direct-irradiance-ground-animation.mp4")
 
-    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, global_irradiance_frames, "figures/global-irradiance-ground-animation.mp4")
+    #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, global_irradiance_frames, "figures/global-irradiance-ground-animation.mp4")
 
-
+    viz.plot_power(time_array, power_total_surface, power_total_ground_diffuse, power_total_ground_direct, power_total_out, 'figures/power-received.png')
+    
 if __name__ == '__main__':
     import sys
     if len(sys.argv) == 1:

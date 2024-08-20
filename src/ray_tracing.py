@@ -17,7 +17,7 @@ class RayTracer:
             sun_vec = sun_vecs[i]
             calc = self.calculate_irradiance(normals_unit, sun_vec, irradiance_frames[i])
             irradiance.append(calc)
-        return irradiance
+        return np.array(irradiance)
     
     def calculate_irradiance(self, normals_unit, sun_vec, spectral_irradiance):
         
@@ -71,80 +71,59 @@ class RayTracer:
 
         return direct_irradiance_frames
     
-    def find_intersection(self, surface_point, unit_vector, ground_plane_z):
-        """
-        Find the intersection of a ray with a horizontal plane (ground).
-
-        Parameters:
-        - surface_point: Point on the surface where the ray starts (x, y, z).
-        - unit_vector: Direction of the ray (vx, vy, vz).
-        - ground_plane_z: The z-coordinate of the ground plane (typically 0).
-
-        Returns:
-        - intersection_point: The coordinates of the intersection on the ground (x, y, z).
-        """
-        if unit_vector[2] != 0:
-            t = (ground_plane_z - surface_point[2]) / unit_vector[2]
-            intersection_point = surface_point + t * unit_vector
-            return intersection_point
-        return None
-    
-    def get_ground_index(self, intersection_point, ground_grid):
-        """
-        Map the intersection point to the nearest grid index on the ground.
-
-        Parameters:
-        - intersection_point: Coordinates of the intersection on the ground (x, y, z).
-        - ground_grid: 3D array of ground points.
-
-        Returns:
-        - index: Tuple of grid indices (i, j) for the ground grid.
-        """
-        distances = np.sqrt(
-            (ground_grid[0] - intersection_point[0])**2 + 
-            (ground_grid[1] - intersection_point[1])**2 + 
-            (ground_grid[2] - intersection_point[2])**2
-        )
-        min_index = np.unravel_index(np.argmin(distances), distances.shape)
-        return min_index
-    
-    def ray_surface_to_ground(self, surface_grid, ground_grid, sun_vecs, irradiance_frames, ground_plane_z):
-        """
-        Trace rays from each point on the surface to the ground and map irradiance values.
-
-        Parameters:
-        - surface_grid: 3D array of surface grid points [3, 20, 20].
-        - ground_grid: 3D array of ground grid points [3, 20, 20].
-        - sun_vecs: Array of unit vectors for the sun direction over time [N, 3].
-        - irradiance_frames: 3D array of irradiance values on the surface over time [N, 20, 20].
-        - ground_plane_z: Z-coordinate of the ground plane.
-
-        Returns:
-        - irradiance_on_ground: 3D array of irradiance values on the ground over time [N, 20, 20].
-        """
-        N, grid_x, grid_y = irradiance_frames.shape
-        irradiance_on_ground = np.zeros((N, grid_x, grid_y))
+    def ray_trace(self, ground_grid, surface_grid, distances_grid, sun_vecs, irradiance_frames):
         
-        for I in range(N):  # Loop over time points
-            for i in range(grid_x):
-                for j in range(grid_y):
-                    surface_point = np.array([
-                        surface_grid[0][i][j], 
-                        surface_grid[1][i][j], 
-                        surface_grid[2][i][j]
-                    ])
-                    unit_vector = sun_vecs[I]
+        ground_shape =  (len(distances_grid), len(distances_grid[0]))
+        irradiance_traced = []
+
+        for i in range(len(irradiance_frames)):
+        
+            irradiance_grid = np.zeros((ground_shape[0], ground_shape[0]))
+
+        # Calculate intersections and closest points
+            for j in range(ground_shape[0]):
+                for k in range(ground_shape[0]):
+                    # Get surface point
+                    x_s = surface_grid[0][j][k]
+                    y_s = surface_grid[1][j][k]
+                    z_s = surface_grid[2][j][k]
+
                     
-                    intersection_point = self.find_intersection(surface_point, unit_vector, ground_plane_z)
-                    
-                    if intersection_point is not None:
-                        ground_idx = self.get_ground_index(intersection_point, ground_grid)
+                    # Compute t for intersection with ground plane (z=0)
+                    if sun_vecs[i][2] != 0:
+                        t = z_s / sun_vecs[i][2] #sun_vec is outwards
                         
-                        if ground_idx is not None:
-                            irradiance_on_ground[I][ground_idx[0]][ground_idx[1]] += irradiance_frames[I][i][j]
-        
-        return irradiance_on_ground
-    
+                        # Compute intersection point
+                        x_int = x_s - t * sun_vecs[i][0]
+                        y_int = y_s - t * sun_vecs[i][1]
+                        z_int = 0  # Since we're intersecting with the ground plane
+                        print(f"intersection found at {x_int, y_int, z_int}")
+                        # Find the closest ground point
+                        distances = np.sqrt((ground_grid[0] - x_int)**2 + 
+                                            (ground_grid[1] - y_int)**2 + 
+                                            (ground_grid[2] - z_int)**2)
+                        
+                        if (x_int >= ground_grid[0].min() and x_int <= ground_grid[0].max() and
+                        y_int >= ground_grid[1].min() and y_int <= ground_grid[1].max()):
+                            closest_j, closest_k = np.unravel_index(np.argmin(distances), distances.shape)
+                            irradiance_point = irradiance_frames[i][j][k]
+
+                        else:
+                            irradiance_point = 0
+                            closest_j = 0
+                            closest_k = 0
+
+                    else: 
+                        irradiance_point = 0
+                        closest_j = 0
+                        closest_k = 0
+
+                    irradiance_grid[closest_j][closest_k] =+ irradiance_point
+
+            irradiance_traced.append(irradiance_grid)
+                    
+        return irradiance_traced
+
     def global_irradiance_ground(self, direct_irradiance_ground, diffuse_irradiance_ground):
 
         global_irradiance_frames = []
@@ -157,6 +136,34 @@ class RayTracer:
 
         return global_irradiance_frames
     
+    def power(self, area_grid, irradiance_frames):
+        
+        power_frames = []
+
+        power_total = []
+
+        ground_shape = (len(area_grid), len(area_grid[0]))
+        
+        for j in range(len(irradiance_frames)):
+            power_ground = np.zeros(ground_shape)
+            total_power = 0
+            # Iterate over each point on the ground grid
+            for p in range(ground_shape[0]):
+                for q in range(ground_shape[1]):
+                                
+                    # Store the result in the irradiance_ground array
+                    power_calc = irradiance_frames[j][p][q] * area_grid[p][q]
+                    power_ground[p][q] = power_calc
+
+                    total_power += power_calc
+            
+            power_total.append(total_power)
+            power_frames.append(power_ground)
+
+        return power_frames, power_total
+
+        
+        
 
 
 

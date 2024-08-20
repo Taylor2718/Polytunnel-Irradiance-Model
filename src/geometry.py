@@ -13,7 +13,7 @@ class Polytunnel:
 
     def generate_ground_grid(self):
         y_ground = np.linspace(-self.length, self.length, self.n)
-        x_ground = np.linspace(-self.radius+0.01, self.radius-0.01, self.n)
+        x_ground = np.linspace(-self.radius+0.0001, self.radius-0.0001, self.n)
 
         X, Y = np.meshgrid(x_ground, y_ground)
         Z = np.zeros_like(X)

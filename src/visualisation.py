@@ -160,8 +160,17 @@ def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_arra
 
     plt.show()
 
-def plot_spectra(time_array, spectra):
+def plot_power(time_array, power_surface, power_ground_diffuse, power_ground_direct, power_ground, filename):
    
-    plt.figure()
-    plt.plot(time_array, spectra)
+    plt.figure(figsize=(10, 7))
+    plt.plot(time_array, power_surface, label = 'Surface (Global)')
+    plt.plot(time_array, power_ground_diffuse, label = 'Ground (Diffuse)')
+    plt.plot(time_array, power_ground_direct, label = 'Ground (Direct)')
+    plt.plot(time_array, power_ground, label = 'Ground (Global)')
+
+    plt.xlabel("Time")
+    plt.ylabel("Power (W)")
+    plt.legend()
+    plt.savefig(filename)
     plt.show()
+

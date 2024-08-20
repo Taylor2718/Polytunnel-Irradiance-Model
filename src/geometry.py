@@ -4,12 +4,15 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Polytunnel:
 
-    def __init__(self, radius = 1, length = 10, n_points = 1000, xy_angle = 0, z_angle = 0):
+    def __init__(self, radius = 1, length = 10, n_points = 1000, xy_angle = 0, z_angle = 0, x_shift = 0.0, y_shift = 0.0, z_shift = 0.0):
         self.radius = radius
         self.length = length
         self.n = int(n_points)
         self.xy_angle = xy_angle
         self.z_angle = z_angle
+        self.x_shift = x_shift
+        self.y_shift = y_shift
+        self.z_shift = z_shift
 
     def generate_ground_grid(self):
         y_ground = np.linspace(-self.length, self.length, self.n)
@@ -31,6 +34,11 @@ class Polytunnel:
 
         X = X_rot_xy * cos_z - Z * sin_z
         Z = X_rot_xy * sin_z + Z * cos_z  # Z_final will still be zero since Z is zero initially
+
+        X = X + self.x_shift
+        Y = Y + self.y_shift
+        Z = Z + self.z_shift
+
 
         return (X, Y, Z)
     
@@ -60,6 +68,10 @@ class Polytunnel:
 
         X = X_rot_xy * cos_z - Z * sin_z
         Z = X_rot_xy * sin_z + Z * cos_z
+
+        X = X + self.x_shift
+        Y = Y + self.y_shift
+        Z = Z + self.z_shift
 
         return (X, Y, Z)
     

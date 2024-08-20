@@ -1,5 +1,5 @@
 import numpy as np
-from sun import Sun
+
 class TunnelIrradiance:
     def __init__(self, polytunnel):
         """

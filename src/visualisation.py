@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import matplotlib.colors as mcolors
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 
 def round_10_min(dt):

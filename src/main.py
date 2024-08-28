@@ -4,7 +4,8 @@ from geometry import Polytunnel
 from sun import Sun
 from irradiance import TunnelIrradiance
 import visualisation as viz
-
+from tracing import Tracing
+from solid import Angle
 
 def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:59Z', latitude=51.1950, longitude=0.2757, res_minutes = 1, n_points = 1000, length = 20, radius = 5, xy_angle = 0, z_angle = 0, transmissivity = 1):
     
@@ -13,16 +14,11 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     tunnel_r = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle, x_shift = -3.0)
 
     ground_grid = tunnel.generate_ground_grid()
+    ground_grid_x, ground_grid_y = (ground_grid[0], ground_grid[1])
+
 
     sun = Sun(start_time=start_time_str, end_time=end_time_str, latitude=latitude, longitude=longitude, resolution_minutes=res_minutes)
     altitude_array, azimuth_array = sun.generate_sun_positions()
-    ground_grid_x = tunnel.generate_ground_grid()[0]
-    ground_grid_y = tunnel.generate_ground_grid()[1]
-    ground_grid_z = tunnel.generate_ground_grid()[2]
-
-    surface_grid_x = tunnel.generate_surface()[0]
-    surface_grid_y = tunnel.generate_surface()[1]
-    surface_grid_z = tunnel.generate_surface()[2]
 
     normals_unit_surface, areas_surface = tunnel.surface_element_unit_vectors()
     normals_unit_ground, areas_ground = tunnel.ground_element_unit_vectors()
@@ -32,44 +28,55 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     distance_grid, separation_unit_vector_grid = tunnel.generate_distances_grid(ground_grid, surface_grid)
     time_array = sun.get_times()
 
-    irradiance = TunnelIrradiance(tunnel)
+    irradiance = TunnelIrradiance(tunnel, radius, length)
     sun_positions = list(zip(altitude_array, azimuth_array))
     sun_vecs = sun.generate_sun_vecs(sun_positions)
+
+    #tracer = Tracing(tunnel, sun_vecs, tunnel_l, tunnel_r)
+    #exposure_maps = tracer.calculate_light_exposure()
+
+    i = 65
+    #print(len(exposure_maps))
+    #print(exposure_maps[i])
+    print(time_array[i])
+    print(altitude_array[i])
+    print(azimuth_array[i])
+
 
     spectra_frames = sun.get_spectra(tilts_unit[0][0], 400, 700)
     irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
     diffuse_irradiance_frames = irradiance.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
-    direct_irradiance_frames = irradiance.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
+    #direct_irradiance_frames = irradiance.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
+    direct_irradiance_frames = irradiance.ray_trace_to_surface(ground_grid, normals_unit_ground, surface_grid, distance_grid, sun_vecs, irradiance_frames, transmissivity)
     global_irradiance_frames = irradiance.global_irradiance_ground(direct_irradiance_frames, diffuse_irradiance_frames)
-    irradiance_traced = irradiance.ray_trace(ground_grid, surface_grid, distance_grid, sun_vecs, irradiance_frames, transmissivity)
 
-    power_ground_diffuse, power_total_ground_diffuse = irradiance.power(areas_ground, diffuse_irradiance_frames)
-    power_surface, power_total_surface = irradiance.power(areas_surface, irradiance_frames)
-    power_ground_direct, power_total_ground_direct = irradiance.power(areas_ground, irradiance_traced)
+    power_total_ground_diffuse = irradiance.power(areas_ground, diffuse_irradiance_frames)
+    power_total_surface = irradiance.power(areas_surface, irradiance_frames)
+    power_total_ground_direct = irradiance.power(areas_ground, direct_irradiance_frames)
     power_total_out = np.array(power_total_ground_diffuse) + np.array(power_total_ground_direct)
 
-    i = 72
-    print(altitude_array[i])
-    print(time_array[i])
-    print(sun_vecs[i])
-    print(f"Number of frames: {len(irradiance_frames)}")
-    
+    #shading = Angle(
+    #solid_angle = shading.compute_visible_solid_angle(surface_grid, surface_normal, None, None))
+
     #viz.plot_sun(time_array, altitude_array, azimuth_array, spectra_frames, "figures/sun.png")
 
     #viz.plot_surface(surface_grid_x, surface_grid_y, surface_grid_z, normals_unit_surface, ground_grid_x, ground_grid_y, ground_grid_z, normals_unit_ground, sun_vec=sun_vecs[72])
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
     
-    viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
+    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
     
     #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
 
-    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_traced, "figures/direct-irradiance-ground-animation.mp4")
+    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, direct_irradiance_frames, "figures/direct-irradiance-ground-animation.mp4")
 
     viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, global_irradiance_frames, "figures/global-irradiance-ground-animation.mp4")
 
-    viz.plot_power(time_array, power_total_surface, power_total_ground_diffuse, power_total_ground_direct, power_total_out, 'figures/power-received.png')
+    viz.plot_power(time_array, power_total_ground_diffuse, power_total_ground_direct, power_total_out, 'figures/power-received.png')
     
+    #viz.plot_coverage(surface_grid, visible_solid_angle)
+    # Compute visible solid angles
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) == 1:

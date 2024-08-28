@@ -1,13 +1,15 @@
 import numpy as np
 
 class TunnelIrradiance:
-    def __init__(self, polytunnel):
+    def __init__(self, polytunnel, radius, length):
         """
         Initializes the RayTracer class for calculating solar irradiance on the polytunnel ground.
         
         :param polytunnel: Instance of the Polytunnel class.
         """
         self.polytunnel = polytunnel
+        self.radius = radius
+        self.length = length
 
     def irradiance_rays(self, normals_unit, sun_positions, sun_vecs, irradiance_frames):
 
@@ -71,54 +73,61 @@ class TunnelIrradiance:
 
         return direct_irradiance_frames
     
-    def ray_trace(self, ground_grid, surface_grid, distances_grid, sun_vecs, irradiance_frames, transmissivity):
-        
-        ground_shape =  (len(distances_grid), len(distances_grid[0]))
+    def ray_trace_to_surface(self, ground_grid, normals_unit_ground, surface_grid, distances_grid, sun_vecs, irradiance_frames, transmissivity):
+            
+        ground_shape = (len(distances_grid), len(distances_grid[0]))
         irradiance_traced = []
 
         for i in range(len(irradiance_frames)):
-        
-            irradiance_grid = np.zeros((ground_shape[0], ground_shape[0]))
+            irradiance_grid = np.zeros((ground_shape[0], ground_shape[1]))
 
-        # Calculate intersections and closest points
+            # Calculate intersections and closest points
             for j in range(ground_shape[0]):
-                for k in range(ground_shape[0]):
-                    # Get surface point
-                    x_s = surface_grid[0][j][k]
-                    y_s = surface_grid[1][j][k]
-                    z_s = surface_grid[2][j][k]
+                for k in range(ground_shape[1]):
+                    # Get ground point
+                    x_g = ground_grid[0][j][k]
+                    y_g = ground_grid[1][j][k]
+                    z_g = ground_grid[2][j][k]
 
-                    
-                    # Compute t for intersection with ground plane (z=0)
-                    if sun_vecs[i][2] != 0:
-                        t = z_s / sun_vecs[i][2] #sun_vec is outwards
+                    # Normalize sun vector
+                    sun_vec = np.array(sun_vecs[i])
+                    sun_vec = sun_vec / np.linalg.norm(sun_vec)
+
+                    # Compute t for intersection with the cylindrical surface
+                    a = sun_vec[0]**2 + sun_vec[2]**2
+                    b = 2 * (x_g * sun_vec[0] + z_g * sun_vec[2])
+                    c = x_g**2 + z_g**2 - self.radius**2
+
+                    discriminant = b**2 - 4 * a * c
+
+                    if discriminant >= 0:
+                        t1 = (-b + np.sqrt(discriminant)) / (2 * a)
+                        t2 = (-b - np.sqrt(discriminant)) / (2 * a)
                         
-                        # Compute intersection point
-                        x_int = x_s - t * sun_vecs[i][0]
-                        y_int = y_s - t * sun_vecs[i][1]
-                        z_int = 0  # Since we're intersecting with the ground plane
-                        print(f"intersection found at {x_int, y_int, z_int}")
-                        # Find the closest ground point
-                        distances = np.sqrt((ground_grid[0] - x_int)**2 + 
-                                            (ground_grid[1] - y_int)**2 + 
-                                            (ground_grid[2] - z_int)**2)
+                        # Choose the correct t (positive and smallest)
+                        t = min(t1, t2) if min(t1, t2) > 0 else max(t1, t2)
                         
-                        if (x_int >= ground_grid[0].min() and x_int <= ground_grid[0].max() and
-                        y_int >= ground_grid[1].min() and y_int <= ground_grid[1].max()):
+                        # Calculate intersection point on the cylindrical surface
+                        x_int = x_g + t * sun_vec[0]
+                        y_int = y_g + t * sun_vec[1]
+                        z_int = z_g + t * sun_vec[2]
+
+                        # Check if the intersection is within the tunnel bounds
+                        if -self.length <= y_int <= self.length:
+                            # Find the closest surface grid point
+                            distances = np.sqrt((surface_grid[0] - x_int)**2 + 
+                                                (surface_grid[1] - y_int)**2 + 
+                                                (surface_grid[2] - z_int)**2)
                             closest_j, closest_k = np.unravel_index(np.argmin(distances), distances.shape)
-                            irradiance_point = irradiance_frames[i][j][k]
-
+                            irradiance_point = irradiance_frames[i][closest_j][closest_k]
                         else:
                             irradiance_point = 0
-                            closest_j = 0
-                            closest_k = 0
 
-                    else: 
+                    else:
                         irradiance_point = 0
-                        closest_j = 0
-                        closest_k = 0
 
-                    irradiance_grid[closest_j][closest_k] =+ transmissivity * irradiance_point
+                    # Apply transmissivity and set the irradiance in the grid
+                    irradiance_grid[j][k] = transmissivity * irradiance_point * np.dot(sun_vecs[i], normals_unit_ground[:, j, k])
 
             irradiance_traced.append(irradiance_grid)
                     
@@ -138,8 +147,6 @@ class TunnelIrradiance:
     
     def power(self, area_grid, irradiance_frames):
         
-        power_frames = []
-
         power_total = []
 
         ground_shape = (len(area_grid), len(area_grid[0]))
@@ -158,9 +165,8 @@ class TunnelIrradiance:
                     total_power += power_calc
             
             power_total.append(total_power)
-            power_frames.append(power_ground)
 
-        return power_frames, power_total
+        return power_total
 
         
         

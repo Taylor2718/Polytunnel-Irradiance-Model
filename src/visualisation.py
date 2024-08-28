@@ -159,17 +159,27 @@ def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_arra
 
     plt.show()
 
-def plot_power(time_array, power_surface, power_ground_diffuse, power_ground_direct, power_ground, filename):
+def plot_power(time_array, power_ground_diffuse, power_ground_direct, power_ground, filename):
    
     plt.figure(figsize=(10, 7))
-    plt.plot(time_array, power_surface, label = 'Surface (Global)')
-    plt.plot(time_array, power_ground_diffuse, label = 'Ground (Diffuse)')
-    plt.plot(time_array, power_ground_direct, label = 'Ground (Direct)')
-    plt.plot(time_array, power_ground, label = 'Ground (Global)')
+    # Plot the stacked area plot
+    plt.stackplot(time_array, power_ground_direct, power_ground_diffuse, labels=['Ground (Direct)', 'Ground (Diffuse)'])
+    # Overlay the global power plot
+    plt.plot(time_array, power_ground, label='Ground (Global)', color='black', linestyle='--')
 
     plt.xlabel("Time")
     plt.ylabel("Power (W)")
     plt.legend()
     plt.savefig(filename)
+    plt.show()
+
+def plot_coverage(surface_grid, visible_solid_angle):
+    # Plot the results
+    plt.figure(figsize=(8, 6))
+    plt.contourf(surface_grid[0], surface_grid[1], visible_solid_angle, levels=100, cmap='viridis')
+    plt.colorbar(label='Visible Solid Angle (steradians)')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Visible Sky Coverage on Central Polytunnel')
     plt.show()
 

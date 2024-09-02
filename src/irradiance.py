@@ -199,6 +199,15 @@ class TunnelIrradiance:
 
         return power_total
     
+    def shaded_irradiance_rays(self, irradiance_frames, shaded_exposure_maps):
+
+        shaded_irradiance_frames = []
+
+        for i in range(len(irradiance_frames)):
+            new_map = np.where(shaded_exposure_maps[i] == 1, irradiance_frames[i], 0)
+            shaded_irradiance_frames.append(new_map)
+
+        return shaded_irradiance_frames
 
 
 

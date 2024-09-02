@@ -123,63 +123,71 @@ class Tracing:
         return exposure_maps
     
     def find_tangent_gradient(self):
-        n_rows, n_cols = self.surface_grid[0].shape
+        n_rows, n_cols = self.surface_grid[0].shape  # Assuming the grid is n x n
+
+        # Initialize grids to store gradients and angles
         gradients_grid = np.zeros((n_rows, n_cols))
         angles_grid = np.zeros((n_rows, n_cols))
+        surface_gradients_grid = np.zeros((n_rows, n_cols))
+        surface_angles_grid = np.zeros((n_rows, n_cols))
 
-        x_values = self.surface_grid[0][:, 0]
-        z_values = self.surface_grid[2][:, 0]
+        x_values = self.surface_grid[0][:, 0]  # x values for the first cross-section
+        z_values = self.surface_grid[2][:, 0]  # z values for the first cross-section
 
         print(self.d, self.R)
         
+        # Calculate the gradient for each x, z pair in the first cross-section
         for i in range(len(x_values)):
-            
-            gradients_row = []
-            angles_row = []
             x_s = x_values[i]
             z_s = z_values[i]
+
             if x_s < 0:  # Surface point is to the left of the center
-                # For left polytunnel, solve for the tangent point
                 a = (-2*self.d*x_s-(self.d**2) + (self.R**2) - (x_s**2))
                 b = 2*z_s*x_s + 2*z_s*self.d
                 c = (self.R**2) - (z_s**2)
                 discriminant = (b**2) - 4*a*c
 
-                # Check if the discriminant is non-negative (i.e., real roots)
                 if discriminant >= 0:
-                    if (a!=0):
-                    # Calculate the two roots
+                    if a != 0:
                         gradient = (-b + np.sqrt(discriminant)) / (2*a)
+                        surface_gradient = -x_s/z_s
+
                     else: 
                         gradient = -1e50
-                    
+                        surface_gradient = 1e50
+
+                    angle_radians = np.arctan(gradient) + np.pi
+                    surface_angle_radians = np.arctan(surface_gradient)
+
+
+
             elif x_s > 0:  # Surface point is to the right of the center
-                # For right polytunnel, solve for the tangent point
                 a = (2*self.d*x_s-(self.d**2) + (self.R**2) - (x_s**2))
                 b = 2*z_s*x_s - 2*z_s*self.d
                 c = (self.R**2) - (z_s**2)
                 discriminant = (b**2) - 4*a*c
 
-                # Check if the discriminant is non-negative (i.e., real roots)
                 if discriminant >= 0:
-                    # Calculate the two roots
-                    if (a!=0):
-                    # Calculate the two roots
+                    if a != 0:
                         gradient = (-b - np.sqrt(discriminant)) / (2*a)
+                        surface_gradient = -x_s/z_s
                     else: 
                         gradient = 1e50
+                        surface_gradient = -1e50
 
-            #print(gradient)
-            angle_radians = np.arctan(gradient)
-            # Convert the angle from radians to degrees
+                    angle_radians = np.arctan(gradient)
+                    surface_angle_radians = np.arctan(surface_gradient) + np.pi
+
+
+
             angle_degrees = np.degrees(angle_radians)
-            for j in range(len(x_values)):
-                gradients_row.append(gradient)
-                angles_row.append(angle_degrees)
+            surface_angle_degrees = np.degrees(surface_angle_radians)
 
-        gradients_grid[i, :] = gradients_row
-        angles_grid[i, :] = angles_row
+            # Store the calculated gradient and angle for all y-values at this x,z cross-section
+            gradients_grid[i, :] = gradient  # Replicate gradient across the row for each y value
+            angles_grid[i, :] = angle_degrees  # Replicate angle across the row for each y value
 
+            surface_gradients_grid[i, :] = surface_gradient 
+            surface_angles_grid[i, :] = surface_angle_degrees  
 
-        return gradients_grid, angles_grid
-    
+        return gradients_grid, angles_grid, surface_gradients_grid, surface_angles_grid

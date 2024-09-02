@@ -27,6 +27,37 @@ class TunnelIrradiance:
         
         return irradiance_surface
     
+    def shading_exposure_map(self, angle_grid1, angle_grid2, sun_vecs):
+        
+        exposure_maps = []
+        for i in range(len(sun_vecs)):
+            x = sun_vecs[i][0]
+            z = sun_vecs[i][2]
+            theta = np.degrees(np.arctan2(z,x))
+                    # Initialize exposure map with zeros
+            exposure_map = np.zeros(angle_grid1.shape, dtype=int)
+            # Iterate over each cell in the grids
+            for i in range(angle_grid1.shape[0]):
+                for j in range(angle_grid1.shape[1]):
+                    # Define the interval boundaries
+                    theta1 = angle_grid1[i, j]
+                    theta2 = angle_grid2[i, j]
+
+                    if theta1 > theta2:
+                        #theta1 is obtuse
+                        if theta2 <= theta <= theta1:
+                            exposure_map[i, j] = 1
+
+                    elif theta2 > theta1:
+                        #theta2 is obtuse
+                        if theta1 <= theta <= theta2:
+                            exposure_map[i, j] = 1
+                            
+            exposure_maps.append(exposure_map)
+
+        return exposure_maps
+
+    
     def diffuse_irradiance_ground(self, distances_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, surface_areas, irradiance_frames, transmissivity):
 
         diffuse_irradiance_frames = []
@@ -167,6 +198,9 @@ class TunnelIrradiance:
             power_total.append(total_power)
 
         return power_total
+    
+
+
 
         
         

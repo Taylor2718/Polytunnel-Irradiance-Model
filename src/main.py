@@ -35,23 +35,27 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     sun_positions = list(zip(altitude_array, azimuth_array))
     sun_vecs = sun.generate_sun_vecs(sun_positions)
     tracer = Tracing(tunnel, sun_vecs, surface_grid, tilts_unit, d, radius)
-    gradient_grid, angle_grid = tracer.find_tangent_gradient()
+    gradient_grid, angle_grid, surface_gradient_grid, surface_angle_grid = tracer.find_tangent_gradient()
 
-    print(gradient_grid)
+    exposure_maps = irradiance.shading_exposure_map(angle_grid, surface_angle_grid, sun_vecs)
+
+    #print(surface_grid[0])
+    #print(gradient_grid)
+    print(surface_angle_grid)
     print(angle_grid)
 
     #tracer = Tracing(tunnel, sun_vecs, tunnel_l, tunnel_r)
     #exposure_maps = tracer.calculate_light_exposure()
 
-    i = 65
+    i = 110
     #print(len(exposure_maps))
-    #print(exposure_maps[i])
     print(time_array[i])
     print(altitude_array[i])
     print(azimuth_array[i])
+    print(sun_vecs[i])
+    print(exposure_maps[i])
 
     #print(tilts_unit)
-        
     #spectra_frames = sun.get_spectra(tilts_unit[0][0], 400, 700)
     #irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
     #diffuse_irradiance_frames = irradiance.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)

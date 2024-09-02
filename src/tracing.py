@@ -1,7 +1,7 @@
 import numpy as np
 
 class Tracing:
-    def __init__(self, main_tunnel, sun_vecs, left_tunnel=None, right_tunnel=None):
+    def __init__(self, main_tunnel, sun_vecs, surface_grid, surface_tilts, d, R, left_tunnel=None, right_tunnel=None):
         """
         Initialize the Tracing class.
 
@@ -15,6 +15,10 @@ class Tracing:
         self.left_tunnel = left_tunnel
         self.right_tunnel = right_tunnel
         self.sun_vecs = sun_vecs
+        self.surface_grid = surface_grid
+        self.surface_tilts = surface_tilts
+        self.d = d
+        self.R = R
 
     def ray_intersects_triangle(self, ray_origin, ray_direction, p0, p1, p2):
         """
@@ -117,3 +121,65 @@ class Tracing:
             exposure_maps.append(exposure_map)
 
         return exposure_maps
+    
+    def find_tangent_gradient(self):
+        n_rows, n_cols = self.surface_grid[0].shape
+        gradients_grid = np.zeros((n_rows, n_cols))
+        angles_grid = np.zeros((n_rows, n_cols))
+
+        x_values = self.surface_grid[0][:, 0]
+        z_values = self.surface_grid[2][:, 0]
+
+        print(self.d, self.R)
+        
+        for i in range(len(x_values)):
+            
+            gradients_row = []
+            angles_row = []
+            x_s = x_values[i]
+            z_s = z_values[i]
+            if x_s < 0:  # Surface point is to the left of the center
+                # For left polytunnel, solve for the tangent point
+                a = (-2*self.d*x_s-(self.d**2) + (self.R**2) - (x_s**2))
+                b = 2*z_s*x_s + 2*z_s*self.d
+                c = (self.R**2) - (z_s**2)
+                discriminant = (b**2) - 4*a*c
+
+                # Check if the discriminant is non-negative (i.e., real roots)
+                if discriminant >= 0:
+                    if (a!=0):
+                    # Calculate the two roots
+                        gradient = (-b + np.sqrt(discriminant)) / (2*a)
+                    else: 
+                        gradient = -1e50
+                    
+            elif x_s > 0:  # Surface point is to the right of the center
+                # For right polytunnel, solve for the tangent point
+                a = (2*self.d*x_s-(self.d**2) + (self.R**2) - (x_s**2))
+                b = 2*z_s*x_s - 2*z_s*self.d
+                c = (self.R**2) - (z_s**2)
+                discriminant = (b**2) - 4*a*c
+
+                # Check if the discriminant is non-negative (i.e., real roots)
+                if discriminant >= 0:
+                    # Calculate the two roots
+                    if (a!=0):
+                    # Calculate the two roots
+                        gradient = (-b - np.sqrt(discriminant)) / (2*a)
+                    else: 
+                        gradient = 1e50
+
+            #print(gradient)
+            angle_radians = np.arctan(gradient)
+            # Convert the angle from radians to degrees
+            angle_degrees = np.degrees(angle_radians)
+            for j in range(len(x_values)):
+                gradients_row.append(gradient)
+                angles_row.append(angle_degrees)
+
+        gradients_grid[i, :] = gradients_row
+        angles_grid[i, :] = angles_row
+
+
+        return gradients_grid, angles_grid
+    

@@ -1,7 +1,7 @@
 import numpy as np
 class Angle:
 
-    def __init__(self, main_tunnel, sun_vecs, left_tunnel=None, right_tunnel=None):
+    def __init__(self, main_tunnel, surface_grid, d, R):
         """
         Initialize the Tracing class.
 
@@ -12,63 +12,55 @@ class Angle:
             right_tunnel (Tunnel, optional): A neighboring polytunnel to the right.
         """
         self.main_tunnel = main_tunnel
-        self.left_tunnel = left_tunnel
-        self.right_tunnel = right_tunnel
-        self.sun_vecs = sun_vecs
+        self.surface_grid = surface_grid
+        self.d = d
+        self.radius = R
     # Compute visible solid angle function
     
-    def compute_visible_solid_angle(surface_grid, surface_normal, left_polytunnel, right_polytunnel):
-        # Initialize the array to store the visible solid angle
-        visible_solid_angle = np.zeros(surface_grid.shape[1:])
+    def calculate_max_tangent_angles_grid(self):
+    # Extract grid dimensions
+        n_rows, n_cols = self.surface_grid[0].shape
 
-        # Define the number of samples for the hemisphere integration
-        theta_samples = 100
-        phi_samples = 200
+        # Initialize the grid for maximum angles
+        angles_grid = np.zeros((n_rows, n_cols))
 
-        # Loop over each point on the central polytunnel
-        for i in range(surface_grid.shape[1]):
-            for j in range(surface_grid.shape[2]):
-                point = surface_grid[:, i, j]
-                normal = surface_normal[:, i, j]
+        # Extract the unique x coordinates (assuming they are along the rows)
+        x_values = self.surface_grid[0][:, 0]
+        z_values = self.surface_grid[2][0, :]  # z-values along one row (same for all rows)
 
-                # Initialize the solid angle sum
-                solid_angle_sum = 0.0
+        # Iterate over unique x coordinates (rows of the grid)
+        for i, x_s in enumerate(x_values):
+            max_angles_row = []
 
-                # Loop over theta and phi to integrate over the hemisphere
-                for theta_idx in range(theta_samples):
-                    for phi_idx in range(phi_samples):
-                        # Convert to spherical coordinates
-                        theta = np.pi * theta_idx / (theta_samples - 1)
-                        phi = 2 * np.pi * phi_idx / (phi_samples - 1)
-                        
-                        # Convert spherical coordinates to Cartesian coordinates
-                        direction = np.array([
-                            np.sin(theta) * np.cos(phi),
-                            np.sin(theta) * np.sin(phi),
-                            np.cos(theta)
-                        ])
+            # Determine which polytunnel to consider
+            for z_s in z_values:
+                if x_s < 0:  # Point is to the left of the center
+                    max_angle_left = 0
 
-                        # If the direction is obstructed by the left or right polytunnel, skip
-                        if is_obstructed(point, direction, left_polytunnel, right_polytunnel):
-                            continue
-                        
-                        # Compute the solid angle element dΩ = sin(theta) * dθ * dφ
-                        d_theta = np.pi / (theta_samples - 1)
-                        d_phi = 2 * np.pi / (phi_samples - 1)
-                        d_omega = np.sin(theta) * d_theta * d_phi
+                    # Calculate max angle for the left polytunnel
+                    for z_t in np.linspace(-self.R, self.R, 1000):
+                        x_t_left = -self.d + np.sqrt(self.R**2 - z_t**2)
+                        angle_left = np.arctan2(z_s - z_t, x_s - x_t_left)
+                        max_angle_left = max(max_angle_left, angle_left)
 
-                        # Add the solid angle contribution if not obstructed
-                        solid_angle_sum += d_omega
+                    max_angles_row.append(max_angle_left)
 
-                # Store the computed solid angle
-                visible_solid_angle[i, j] = solid_angle_sum
+                elif x_s > 0:  # Point is to the right of the center
+                    max_angle_right = 0
 
-        return visible_solid_angle
+                    # Calculate max angle for the right polytunnel
+                    for z_t in np.linspace(-self.R, self.R, 1000):
+                        x_t_right = self.d - np.sqrt(self.R**2 - z_t**2)
+                        angle_right = np.arctan2(z_s - z_t, x_s - x_t_right)
+                        max_angle_right = max(max_angle_right, angle_right)
 
-    # Mock function to determine if a direction is obstructed by the left or right polytunnel
-    def is_obstructed(point, direction, left_polytunnel, right_polytunnel):
-        # This function should check for intersections with the left and right polytunnel surfaces
-        # Here, we mock this function by returning False (i.e., no obstruction)
-        return False
+                    max_angles_row.append(max_angle_right)
 
-    
+                else:  # Point is exactly at the center (x_s = 0)
+                    max_angle = np.pi
+                    max_angles_row.append(max_angle)  # No tangent can be calculated exactly at the center
+
+            # Fill the entire row with computed angles
+            angles_grid[i, :] = max_angles_row
+
+        return angles_grid

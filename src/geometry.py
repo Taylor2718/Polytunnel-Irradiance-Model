@@ -2,7 +2,7 @@ import numpy as np
 
 class Polytunnel:
 
-    def __init__(self, radius = 1, length = 10, n_points = 1000, xy_angle = 0, z_angle = 0, x_shift = 0.0, y_shift = 0.0, z_shift = 0.0):
+    def __init__(self, radius = 1, length = 10, n_points = 1000, xy_angle = 0, z_angle = 0, x_shift = 0.0, y_shift = 0.0, z_shift = 0.0, theta_margin = 0, cell_thickness = 0, cell_gap = 0):
         self.radius = radius
         self.length = length
         self.n = int(n_points)
@@ -11,6 +11,10 @@ class Polytunnel:
         self.x_shift = x_shift
         self.y_shift = y_shift
         self.z_shift = z_shift
+        self.theta_margin = theta_margin
+        self.cell_thickness = cell_thickness # Thickness of the solar cell (in terms of segments)
+        self.cell_gap = cell_gap
+
 
     def generate_ground_grid(self):
         y_ground = np.linspace(-self.length, self.length, self.n)
@@ -71,7 +75,28 @@ class Polytunnel:
         Y = Y + self.y_shift
         Z = Z + self.z_shift
 
-        return (X, Y, Z)
+            # Parameters for solar cells
+        theta_margin = self.theta_margin  # Margin on the left and right edges (in terms of segments)
+        cell_thickness = self.cell_thickness  # Thickness of the solar cell (in terms of segments)
+        cell_gap = self.cell_gap  # Gap between solar cells (in terms of segments)
+
+            # Initialize an array to store solar cell positions
+        solar_cells = np.zeros_like(X, dtype=int)  # Use int type for 0 and 1
+
+        # Determine the theta range for solar cells (ignoring edges)
+        theta_start = theta_margin
+        theta_end = self.n - theta_margin
+        
+        if cell_thickness == 0:
+
+            solar_cells = np.zeros_like(X, dtype=int)  #no solar cells
+        
+        else:
+            # Mark the positions of solar cells based on the parameters
+            for i in range(0, self.n, cell_thickness + cell_gap):  # Iterate over columns (Y-direction)
+                solar_cells[theta_start:theta_end, i:i + cell_thickness] = 1 
+
+        return (X, Y, Z), solar_cells
     
     def generate_distances_grid(self, ground_grid, surface_grid):
         
@@ -137,9 +162,9 @@ class Polytunnel:
     
     def surface_element_unit_vectors(self):
         
-        X = self.generate_surface()[0]
-        Y = self.generate_surface()[1]
-        Z = self.generate_surface()[2]
+        X = self.generate_surface()[0][0]
+        Y = self.generate_surface()[0][1]
+        Z = self.generate_surface()[0][2]
 
         dx = np.gradient(X, axis=0)
         dy = np.gradient(Y, axis=0)

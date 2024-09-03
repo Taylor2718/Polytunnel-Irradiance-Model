@@ -8,7 +8,7 @@ from tracing import Tracing
 
 def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:59Z', latitude=51.1950, longitude=0.2757, res_minutes = 1, n_points = 1000, length = 20, radius = 5, xy_angle = 0, z_angle = 0, transmissivity = 1):
     
-    tunnel = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle)
+    tunnel = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle, theta_margin = 3, cell_thickness=1, cell_gap=2)
     tunnel_l = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle, x_shift = 3.0)
     tunnel_r = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle, x_shift = -3.0)
 
@@ -22,24 +22,27 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     normals_unit_ground, areas_ground = tunnel.ground_element_unit_vectors()
     tilts_unit = tunnel.surface_tilt(normals_unit_surface)
 
-    surface_grid = tunnel.generate_surface()
+    surface_grid, solar_cells = tunnel.generate_surface()
     surface_grid_x, surface_grid_y = (surface_grid[0], surface_grid[1])
 
-    surface_grid_l = tunnel_l.generate_surface()
-    surface_grid_r = tunnel_r.generate_surface()
+    #surface_grid_l = tunnel_l.generate_surface()
+    #surface_grid_r = tunnel_r.generate_surface()
     d = 2*radius
-
+    
 
     distance_grid, separation_unit_vector_grid = tunnel.generate_distances_grid(ground_grid, surface_grid)
     time_array = sun.get_times()
 
-    irradiance = TunnelIrradiance(tunnel, radius, length)
-    sun_positions = list(zip(altitude_array, azimuth_array))
-    sun_vecs = sun.generate_sun_vecs(sun_positions)
-    tracer = Tracing(tunnel, sun_vecs, surface_grid, tilts_unit, d, radius)
-    gradient_grid, angle_grid, surface_gradient_grid, surface_angle_grid = tracer.find_tangent_gradient()
+    print(solar_cells)
+    print(surface_grid_x[0,:])
 
-    exposure_maps = irradiance.shading_exposure_map(angle_grid, surface_angle_grid, sun_vecs)
+    #irradiance = TunnelIrradiance(tunnel, radius, length)
+    #sun_positions = list(zip(altitude_array, azimuth_array))
+    #sun_vecs = sun.generate_sun_vecs(sun_positions)
+    #tracer = Tracing(tunnel, sun_vecs, surface_grid, tilts_unit, d, radius)
+    #gradient_grid, angle_grid, surface_gradient_grid, surface_angle_grid = tracer.find_tangent_gradient()
+
+    #exposure_maps = irradiance.shading_exposure_map(angle_grid, surface_angle_grid, sun_vecs)
 
     #print(surface_grid[0])
     #print(gradient_grid)
@@ -49,20 +52,18 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     #tracer = Tracing(tunnel, sun_vecs, tunnel_l, tunnel_r)
     #exposure_maps = tracer.calculate_light_exposure()
 
-    i = 118
+    #i = 118
     #print(len(exposure_maps))
     #print(time_array[i])
     #print(altitude_array[i])
     #print(azimuth_array[i])
     #print(sun_vecs[i])
-    print(exposure_maps[i])
+    #print(exposure_maps[i])
 
-    #print(tilts_unit)
-    spectra_frames = sun.get_spectra(tilts_unit[0][0], 400, 700)
-    irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
-    shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
+    #spectra_frames = sun.get_spectra(tilts_unit[0][0], 400, 700)
+    #irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
+    #shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
 
-    print(shaded_irradiance_frames[i])
     #diffuse_irradiance_frames = irradiance.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
     #direct_irradiance_frames = irradiance.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
     #direct_irradiance_frames = irradiance.ray_trace_to_surface(ground_grid, normals_unit_ground, surface_grid, distance_grid, sun_vecs, irradiance_frames, transmissivity)
@@ -82,7 +83,7 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
     
-    viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, shaded_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
+    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, shaded_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
     
     #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
 

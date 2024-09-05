@@ -90,37 +90,6 @@ class Tracing:
                     return True
 
         return False
-
-    def calculate_light_exposure(self):
-        """
-        Calculate the light exposure for each point on the main polytunnel.
-
-        Returns:
-            np.array: A 2D array representing the light exposure at each point on the main tunnel surface grid.
-        """
-        surface_grid = self.main_tunnel.generate_surface()
-        sun_vecs = self.sun_vecs
-
-        exposure_maps = []
-
-        for i in range(len(sun_vecs)):
-            exposure_map = np.ones((len(surface_grid[0]), len(surface_grid[0][0])))
-
-            for j in range(len(surface_grid[0])):
-                for k in range(len(surface_grid[0][0])):
-                    point = np.array([surface_grid[0][j][k], surface_grid[1][j][k], surface_grid[2][j][k]])
-                    sun_vec = sun_vecs[i]
-
-                    # Check if the point is shaded by the left or right tunnel
-                    if self.left_tunnel and self.ray_intersects_surface(point, sun_vec, self.left_tunnel.generate_surface()):
-                        exposure_map[j, k] = 0  # Mark as shadowed (0 light exposure)
-                    if self.right_tunnel and self.ray_intersects_surface(point, sun_vec, self.right_tunnel.generate_surface()):
-                        exposure_map[j, k] = 0  # Mark as shadowed (0 light exposure)
-            
-
-            exposure_maps.append(exposure_map)
-
-        return exposure_maps
     
     def find_tangent_gradient(self):
         n_rows, n_cols = self.surface_grid[0].shape  # Assuming the grid is n x n
@@ -179,15 +148,25 @@ class Tracing:
                     surface_angle_radians = np.arctan(surface_gradient) + np.pi
 
 
-
-            angle_degrees = np.degrees(angle_radians)
-            surface_angle_degrees = np.degrees(surface_angle_radians)
-
             # Store the calculated gradient and angle for all y-values at this x,z cross-section
             gradients_grid[i, :] = gradient  # Replicate gradient across the row for each y value
-            angles_grid[i, :] = angle_degrees  # Replicate angle across the row for each y value
+            angles_grid[i, :] = angle_radians  # Replicate angle across the row for each y value
 
             surface_gradients_grid[i, :] = surface_gradient 
-            surface_angles_grid[i, :] = surface_angle_degrees  
+            surface_angles_grid[i, :] = surface_angle_radians
 
         return gradients_grid, angles_grid, surface_gradients_grid, surface_angles_grid
+    
+    def solid_angle_grid(self, angle_grid1, angle_grid2):
+        
+        solid_angle_map = np.zeros(angle_grid1.shape)
+
+        for i in range(angle_grid1.shape[0]):
+            for j in range(angle_grid1.shape[1]):
+                # Define the interval boundaries
+                theta1 = angle_grid1[i, j]
+                theta2 = angle_grid2[i, j]
+
+                solid_angle_map[i, j] = np.pi*(2- np.cos(theta1) - np.cos(theta2))
+
+        return solid_angle_map

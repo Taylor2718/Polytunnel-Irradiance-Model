@@ -1,4 +1,6 @@
 import numpy as np
+import tmm as tmm
+
 
 class TunnelIrradiance:
     def __init__(self, polytunnel, radius, length):
@@ -36,6 +38,7 @@ class TunnelIrradiance:
             theta = np.degrees(np.arctan2(z,x))
                     # Initialize exposure map with zeros
             exposure_map = np.zeros(angle_grid1.shape, dtype=int)
+
             # Iterate over each cell in the grids
             for i in range(angle_grid1.shape[0]):
                 for j in range(angle_grid1.shape[1]):
@@ -47,6 +50,7 @@ class TunnelIrradiance:
                         #theta1 is obtuse
                         if theta2 <= theta <= theta1:
                             exposure_map[i, j] = 1
+
 
                     elif theta2 > theta1:
                         #theta2 is obtuse
@@ -208,6 +212,22 @@ class TunnelIrradiance:
             shaded_irradiance_frames.append(new_map)
 
         return shaded_irradiance_frames
+    
+    def solar_cells_irradiance_rays(self, irradiance_frames, solar_cell_exposure_maps, pol, n_list, d_list, incident_grid, wavelengths):
+
+        solar_cells_irradiance_frames = []
+
+        for i in range(len(irradiance_frames)):
+            
+            
+            for j in range(len(wavelengths)):
+                
+                tmm.coh_tmm(pol, n_list, d_list, incident_grid)
+                tau = 1
+            
+            new_map = np.where(solar_cell_exposure_maps[i] == 1, irradiance_frames[i], 0)
+            solar_cells_irradiance_frames.append(new_map)
+
 
 
 

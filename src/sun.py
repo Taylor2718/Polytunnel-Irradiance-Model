@@ -68,6 +68,18 @@ class Sun:
 
         return sun_vecs
     
+    def sunvec_tilts_grid(self, sun_vecs, tilts_unit):
+
+        grids = []
+
+        for i in range(len(sun_vecs)):
+            
+            angle = np.arccos(sun_vecs[i][2])
+            grid = tilts_unit - angle 
+            grids.append(grid)
+    
+        return grids
+    
     def generate_sun_vec_grids(self, sun_vecs, surface_grid, distance_array):
         
         X, Y, Z = surface_grid

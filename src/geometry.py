@@ -185,3 +185,5 @@ class Polytunnel:
         tilt = np.arccos(normals[:][2])
 
         return tilt
+    
+

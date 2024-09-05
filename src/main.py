@@ -5,6 +5,9 @@ from sun import Sun
 from irradiance import TunnelIrradiance
 import visualisation as viz
 from tracing import Tracing
+import tmm as tmm
+
+#coh = tmm.coh_tmm()
 
 def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:59Z', latitude=51.1950, longitude=0.2757, res_minutes = 1, n_points = 1000, length = 20, radius = 5, xy_angle = 0, z_angle = 0, transmissivity = 1):
     
@@ -33,36 +36,41 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     distance_grid, separation_unit_vector_grid = tunnel.generate_distances_grid(ground_grid, surface_grid)
     time_array = sun.get_times()
 
-    print(solar_cells)
-    print(surface_grid_x[0,:])
+    irradiance = TunnelIrradiance(tunnel, radius, length)
+    sun_positions = list(zip(altitude_array, azimuth_array))
+    sun_vecs = sun.generate_sun_vecs(sun_positions)
+    sun_incident = sun.sunvec_tilts_grid(sun_vecs, tilts_unit)
+    print(sun_incident[72])
+    print(tilts_unit)
+    print(sun_vecs[-1])
 
-    #irradiance = TunnelIrradiance(tunnel, radius, length)
-    #sun_positions = list(zip(altitude_array, azimuth_array))
-    #sun_vecs = sun.generate_sun_vecs(sun_positions)
-    #tracer = Tracing(tunnel, sun_vecs, surface_grid, tilts_unit, d, radius)
-    #gradient_grid, angle_grid, surface_gradient_grid, surface_angle_grid = tracer.find_tangent_gradient()
+    material_list = ['air', 'Ag', 'MoO3', 'PCE10:PC61GM', 'ZnO', 'Mn03', 'PBDT[2F]T:PC71BM', 'a-ZnO', 'ITO']
+    d_list = np.array([50, 80, 7, 70, 35, 15, 100, 25, 110])
+    tracer = Tracing(tunnel, sun_vecs, surface_grid, tilts_unit, d, radius)
+    gradient_grid, angle_grid, surface_gradient_grid, surface_angle_grid = tracer.find_tangent_gradient()
+    solid_angle_grid = tracer.solid_angle_grid(angle_grid, surface_angle_grid)
 
-    #exposure_maps = irradiance.shading_exposure_map(angle_grid, surface_angle_grid, sun_vecs)
+    exposure_maps = irradiance.shading_exposure_map(angle_grid, surface_angle_grid, sun_vecs)
 
     #print(surface_grid[0])
     #print(gradient_grid)
     #print(surface_angle_grid)
     #print(angle_grid)
+    print(solar_cells)
 
     #tracer = Tracing(tunnel, sun_vecs, tunnel_l, tunnel_r)
-    #exposure_maps = tracer.calculate_light_exposure()
 
-    #i = 118
+    i = 115
     #print(len(exposure_maps))
-    #print(time_array[i])
-    #print(altitude_array[i])
+    print(time_array[i])
+    print(altitude_array[i])
     #print(azimuth_array[i])
     #print(sun_vecs[i])
     #print(exposure_maps[i])
 
-    #spectra_frames = sun.get_spectra(tilts_unit[0][0], 400, 700)
-    #irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
-    #shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
+    spectra_frames = sun.get_spectra(tilts_unit[0][0], 400, 700)
+    irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
+    shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
 
     #diffuse_irradiance_frames = irradiance.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
     #direct_irradiance_frames = irradiance.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)

@@ -7,6 +7,8 @@ from irradiance import TunnelIrradiance
 import visualisation as viz
 from tracing import Tracing
 import tmm as tmm
+import tmm_fast as vectmm
+import torch
 
 #coh = tmm.coh_tmm()
 
@@ -63,12 +65,66 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     #n_list = np.array([1, 1+0.2j, 1])
     #coh = tmm.coh_tmm('p', n_list, d_list, -0.2, 400)
 
+    optical_wavelengths = np.linspace(300, 700, 400)
+
     complex_array = tracer.n_list_wavelength(material_list, optical_wavelengths)
     print(complex_array[10])
 
+    complex_array = np.array(complex_array)  # Refractive index array
+    d_list = np.array(d_list)  # Thickness array
+    d_list = d_list.astype(np.float64)  # Convert from string to float
+    sun_incident = np.array(sun_incident[72][:, 0])  # Ensure sun_incident is a numpy array
+    optical_wavelengths = np.array(optical_wavelengths) 
+
+        # Assuming complex_array is your refractive index array (N) and d_list is the thickness array (T)
+    N = np.array(complex_array, dtype=np.complex128)  # Convert N to numpy array
+    T = np.array(d_list, dtype=np.float64)  # Convert T to numpy array
+
+    # Swap the axes of N to have shape [8, 38] instead of [38, 8]
+    N = np.swapaxes(N, 0, 1)  # Swap axes so that layers come first (N shape should be [8, 38])
+
+    # Incident angles and wavelengths as numpy arrays
+    Theta = np.array(sun_incident, dtype=np.float64)  # Incident angles (Theta)
+    optical_wavelengths = np.array(optical_wavelengths, dtype=np.float64)  # Wavelengths
+
+        # Check the shapes and data types after conversion
+    print("N shape:", N.shape)  # Should be (8, 38)
+    print("T shape:", T.shape)  # Should be (8)
+    print("Theta shape:", Theta.shape)  # Check the shape of incident angles array
+    print("optical_wavelengths shape:", optical_wavelengths.shape)  # Check the shape of wavelength array
+
+    # If you were previously using torch-based functions, replace them with numpy equivalents or modify the function you're using accordingly.
+    O = vectmm.coh_tmm('s', N, T, Theta, optical_wavelengths)  # Assuming vectmm.coh_tmm works with numpy arrays
+    t = O['T']  # Transmission amplitudes
+
+    # Output the shape of the result
+    print(t.shape)
+    print(np.max(t))
+    
+    plt.figure(figsize=(8, 6))
+
+    # Create a heatmap using pcolormesh
+    plt.pcolormesh(optical_wavelengths, Theta, t, cmap='viridis', shading='auto', vmin=0, vmax=np.max(t))
+
+    # Add a color bar to show the transmission amplitude scale (0 to 1)
+    cbar = plt.colorbar()
+    cbar.set_label('Transmission Amplitude')
+
+    # Label the axes
+    plt.xlabel('Wavelength (nm)')
+    plt.ylabel('Tilt Angle (Radians)')
+
+    # Set a title for the plot
+    plt.title('TMM of Transmission Amplitudes for Tilt Angles and Wavelengths')
+
+    plt.savefig('figures/tmm-transmission.png')
+
+    # Display the plot
+    plt.show()
     #t_grid_frames = irradiance.t_grid(sun_incident, optical_wavelengths, complex_array, d_list, exposure_maps, solar_cells)
-    print(time_array[54])
-    print(exposure_maps[54])
+    #print(solar_cells)
+    #print(time_array[54])
+    #print(t_grid_frames[54])
     #print(coh)
     #print(coh['T'])
     
@@ -88,7 +144,7 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
     
-    viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, shaded_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
+    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, shaded_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
     
     #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
 

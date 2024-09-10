@@ -51,7 +51,6 @@ class TunnelIrradiance:
                         if theta2 <= theta <= theta1:
                             exposure_map[i, j] = 1
 
-
                     elif theta2 > theta1:
                         #theta2 is obtuse
                         if theta1 <= theta <= theta2:
@@ -216,32 +215,31 @@ class TunnelIrradiance:
     def t_grid(self, incident_grid, wavelengths, n_list, d_list, shading_exposure, solar_cell_exposure):
         
         t_grid_frames = []
+
         for i in range(len(incident_grid)):
             
             t_grid = np.empty(incident_grid[0].shape, dtype=object)
+
             for j in range(t_grid.shape[0]):
                 for k in range(t_grid.shape[1]):
 
                     tilt = np.abs(incident_grid[i][j][k])
-                    #print(tilt)
 
                     if tilt > (np.pi/2):
                         tilt = np.pi/2
 
                     T_list = []
                     if (solar_cell_exposure[j, k] == 1) and (shading_exposure[i][j, k] == 1):
-                        print(i)
                         for l in range(len(wavelengths)):
                             wavelength = wavelengths[l]
                             n = n_list[l]
                             coh_T = tmm.coh_tmm('p', n, d_list, tilt, wavelength)['T']
                             T_list.append(coh_T)
-                            #print(coh_T)
                         
                         t_grid[j, k] = T_list
                     
                     else:
-                        t_grid[j,k] = 0.0
+                        t_grid[j,k] = np.zeros(len(wavelengths))
             
             t_grid_frames.append(t_grid)
 

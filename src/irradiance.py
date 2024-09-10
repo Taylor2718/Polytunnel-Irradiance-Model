@@ -35,7 +35,7 @@ class TunnelIrradiance:
         for i in range(len(sun_vecs)):
             x = sun_vecs[i][0]
             z = sun_vecs[i][2]
-            theta = np.degrees(np.arctan2(z,x))
+            theta = np.arctan2(z,x)
                     # Initialize exposure map with zeros
             exposure_map = np.zeros(angle_grid1.shape, dtype=int)
 
@@ -213,17 +213,55 @@ class TunnelIrradiance:
 
         return shaded_irradiance_frames
     
+    def t_grid(self, incident_grid, wavelengths, n_list, d_list, shading_exposure, solar_cell_exposure):
+        
+        t_grid_frames = []
+        for i in range(len(incident_grid)):
+            
+            t_grid = np.empty(incident_grid[0].shape, dtype=object)
+            for j in range(t_grid.shape[0]):
+                for k in range(t_grid.shape[1]):
+
+                    tilt = np.abs(incident_grid[i][j][k])
+                    #print(tilt)
+
+                    if tilt > (np.pi/2):
+                        tilt = np.pi/2
+
+                    T_list = []
+                    if (solar_cell_exposure[j, k] == 1) and (shading_exposure[i][j, k] == 1):
+                        print(i)
+                        for l in range(len(wavelengths)):
+                            wavelength = wavelengths[l]
+                            n = n_list[l]
+                            coh_T = tmm.coh_tmm('p', n, d_list, tilt, wavelength)['T']
+                            T_list.append(coh_T)
+                            #print(coh_T)
+                        
+                        t_grid[j, k] = T_list
+                    
+                    else:
+                        t_grid[j,k] = 0.0
+            
+            t_grid_frames.append(t_grid)
+
+        return t_grid_frames
+    
     def solar_cells_irradiance_rays(self, irradiance_frames, solar_cell_exposure_maps, pol, n_list, d_list, incident_grid, wavelengths):
 
         solar_cells_irradiance_frames = []
-
+        ground_shape = (len(irradiance_frames[0]), len(irradiance_frames[0][0]))
         for i in range(len(irradiance_frames)):
-            
-            
+            irradiance_grid = np.zeros((ground_shape[0], ground_shape[1]))
+
             for j in range(len(wavelengths)):
-                
-                tmm.coh_tmm(pol, n_list, d_list, incident_grid)
-                tau = 1
+                wavelength = wavelengths[j]
+                n_list_lam = np.array([1, n_list[j], 1])
+
+                for p in range(ground_shape[0]):
+                    for q in range(ground_shape[1]):
+                        tmm.coh_tmm(pol, n_list_lam, d_list, incident_grid)
+                        tau = 1
             
             new_map = np.where(solar_cell_exposure_maps[i] == 1, irradiance_frames[i], 0)
             solar_cells_irradiance_frames.append(new_map)

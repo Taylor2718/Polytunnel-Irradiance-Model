@@ -118,6 +118,7 @@ class Sun:
         ozone = 0.31  # atm-cm
         albedo = 0.2
         
+        solar_spectra_frames = []
         spectral_irradiance_frames = []
         for i in range(len(times)):
             solpos = solarposition.get_solarposition(times[i], lat, lon)
@@ -138,7 +139,7 @@ class Sun:
                 relative_airmass=relative_airmass,
                 precipitable_water=water_vapor_content,
                 ozone=ozone,
-                aerosol_turbidity_500nm=tau500,
+                aerosol_turbidity_500nm=tau500
             )
             wavelengths = spectra['wavelength']
             intensities = spectra['poa_global'].flatten()
@@ -148,7 +149,8 @@ class Sun:
             optical_intensities = np.nan_to_num(intensities[optical_mask], nan=0.0)
  
             integral = trapezoid(optical_intensities, optical_wavelengths, 0.01)
+            solar_spectra_frames.append(optical_intensities)
             spectral_irradiance_frames.append(integral)
 
-        return spectral_irradiance_frames
+        return optical_wavelengths, solar_spectra_frames, spectral_irradiance_frames
     

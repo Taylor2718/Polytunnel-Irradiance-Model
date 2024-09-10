@@ -1,5 +1,6 @@
 # main.py
 import numpy as np
+import matplotlib.pyplot as plt
 from geometry import Polytunnel
 from sun import Sun
 from irradiance import TunnelIrradiance
@@ -40,38 +41,37 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     sun_positions = list(zip(altitude_array, azimuth_array))
     sun_vecs = sun.generate_sun_vecs(sun_positions)
     sun_incident = sun.sunvec_tilts_grid(sun_vecs, tilts_unit)
-    print(sun_incident[72])
-    print(tilts_unit)
-    print(sun_vecs[-1])
+    print(np.min(sun_incident))
+    print(len(sun_vecs))
 
-    material_list = ['air', 'Ag', 'MoO3', 'PCE10:PC61GM', 'ZnO', 'Mn03', 'PBDT[2F]T:PC71BM', 'a-ZnO', 'ITO']
-    d_list = np.array([50, 80, 7, 70, 35, 15, 100, 25, 110])
     tracer = Tracing(tunnel, sun_vecs, surface_grid, tilts_unit, d, radius)
     gradient_grid, angle_grid, surface_gradient_grid, surface_angle_grid = tracer.find_tangent_gradient()
     solid_angle_grid = tracer.solid_angle_grid(angle_grid, surface_angle_grid)
 
     exposure_maps = irradiance.shading_exposure_map(angle_grid, surface_angle_grid, sun_vecs)
 
-    #print(surface_grid[0])
-    #print(gradient_grid)
-    #print(surface_angle_grid)
-    #print(angle_grid)
-    print(solar_cells)
-
-    #tracer = Tracing(tunnel, sun_vecs, tunnel_l, tunnel_r)
-
-    i = 115
-    #print(len(exposure_maps))
-    print(time_array[i])
-    print(altitude_array[i])
-    #print(azimuth_array[i])
-    #print(sun_vecs[i])
-    #print(exposure_maps[i])
-
-    spectra_frames = sun.get_spectra(tilts_unit[0][0], 400, 700)
+    optical_wavelengths, optical_intensities, spectra_frames = sun.get_spectra(tilts_unit[0][0], 300, 700)
     irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
     shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
+    
+    ag_wavelengths, ag_n_data, ag_k_data = tracer.read_nk_from_csv('ag')
+    ag_n_sample, ag_k_sample, ag_n_list = tracer.spectrum_interpolation(optical_wavelengths, 'ag')
+    
+    material_list = ['ag', 'moo3', 'zno', 'moo3', 'zno', 'ito']
+    d_list = np.array(['inf', 80, 7, 35, 15, 25, 110, 'inf'])
+    #d_list = np.array(['inf', 80, 'inf'])
+    #n_list = np.array([1, 1+0.2j, 1])
+    #coh = tmm.coh_tmm('p', n_list, d_list, -0.2, 400)
 
+    complex_array = tracer.n_list_wavelength(material_list, optical_wavelengths)
+    print(complex_array[10])
+
+    #t_grid_frames = irradiance.t_grid(sun_incident, optical_wavelengths, complex_array, d_list, exposure_maps, solar_cells)
+    print(time_array[54])
+    print(exposure_maps[54])
+    #print(coh)
+    #print(coh['T'])
+    
     #diffuse_irradiance_frames = irradiance.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
     #direct_irradiance_frames = irradiance.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
     #direct_irradiance_frames = irradiance.ray_trace_to_surface(ground_grid, normals_unit_ground, surface_grid, distance_grid, sun_vecs, irradiance_frames, transmissivity)
@@ -82,16 +82,13 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     #power_total_ground_direct = irradiance.power(areas_ground, direct_irradiance_frames)
     #power_total_out = np.array(power_total_ground_diffuse) + np.array(power_total_ground_direct)
 
-    #shading = Angle(
-    #solid_angle = shading.compute_visible_solid_angle(surface_grid, surface_normal, None, None))
-
     #viz.plot_sun(time_array, altitude_array, azimuth_array, spectra_frames, "figures/sun.png")
 
     #viz.plot_surface(surface_grid_x, surface_grid_y, surface_grid_z, normals_unit_surface, ground_grid_x, ground_grid_y, ground_grid_z, normals_unit_ground, sun_vec=sun_vecs[72])
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
     
-    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, shaded_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
+    viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, shaded_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
     
     #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
 

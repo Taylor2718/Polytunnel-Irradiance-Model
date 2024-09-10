@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+import os
 
 class Tracing:
     def __init__(self, main_tunnel, sun_vecs, surface_grid, surface_tilts, d, R, left_tunnel=None, right_tunnel=None):
@@ -128,8 +130,6 @@ class Tracing:
                     angle_radians = np.arctan(gradient) + np.pi
                     surface_angle_radians = np.arctan(surface_gradient)
 
-
-
             elif x_s > 0:  # Surface point is to the right of the center
                 a = (2*self.d*x_s-(self.d**2) + (self.R**2) - (x_s**2))
                 b = 2*z_s*x_s - 2*z_s*self.d
@@ -146,7 +146,6 @@ class Tracing:
 
                     angle_radians = np.arctan(gradient)
                     surface_angle_radians = np.arctan(surface_gradient) + np.pi
-
 
             # Store the calculated gradient and angle for all y-values at this x,z cross-section
             gradients_grid[i, :] = gradient  # Replicate gradient across the row for each y value
@@ -170,3 +169,58 @@ class Tracing:
                 solid_angle_map[i, j] = np.pi*(2- np.cos(theta1) - np.cos(theta2))
 
         return solid_angle_map
+    
+    def read_nk_from_csv(self, material):
+        """
+        Reads wavelength and spectral data from a CSV file for a given material.
+
+        Parameters:
+        material (str): The name of the material (used to construct the CSV file name).
+
+        Returns:
+        tuple: A tuple containing two NumPy arrays:
+            - wavelengths: The wavelengths from the first column.
+            - spectral_data: The spectral data from the second column.
+        """
+        # Construct the file path based on the material name
+        file_path = os.path.join('..', 'data', 'materials', f'{material}.csv')
+    
+        # L# Read CSV file into a DataFrame
+        df = pd.read_csv(file_path, skipinitialspace=True)
+        
+        # Extract relevant columns
+        wavelengths_nm = df["λ,n (nm)"].values
+        n_data = df["n"].values
+        k_data = df["k"].values
+
+        return wavelengths_nm, n_data, k_data
+    
+    def spectrum_interpolation(self, wavelengths_sample, material):
+
+        wavelengths_data, n_data, k_data = self.read_nk_from_csv(material)
+
+        wavelengths_sample = np.array(wavelengths_sample)
+        wavelengths_data = np.array(wavelengths_data)
+        n_data = np.array(n_data)
+        k_data = np.array(k_data)
+
+        # Perform interpolation
+        int_n_data = np.interp(wavelengths_sample, wavelengths_data, n_data)
+        int_k_data = np.interp(wavelengths_sample, wavelengths_data, k_data)
+
+        complex_array = int_n_data + 1j * int_k_data
+
+        return int_n_data, int_k_data, complex_array
+    
+    def n_list_wavelength(self, mat_list, wavelengths_sample):
+
+        # Generate complex matrices for each material
+        complex_mats = [self.spectrum_interpolation(wavelengths_sample, mat)[2] for mat in mat_list] #n.b. material must exclude air
+        
+        # Create a list of complex arrays at each wavelength, with 1 at the start and end
+        complex_array_list = [[1] + [complex_mats[j][i] for j in range(len(mat_list))] + [1] for i in range(len(wavelengths_sample))]
+
+        return complex_array_list
+            
+        
+

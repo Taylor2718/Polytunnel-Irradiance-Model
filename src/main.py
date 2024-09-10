@@ -117,7 +117,7 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     # Set a title for the plot
     plt.title('TMM of Transmission Amplitudes for Tilt Angles and Wavelengths')
 
-    plt.savefig('figures/tmm-transmission.png')
+    plt.savefig('figures/tmm-transmission.png', dpi=300)
 
     # Display the plot
     plt.show()

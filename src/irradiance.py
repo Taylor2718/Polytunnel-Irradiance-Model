@@ -1,5 +1,7 @@
 import numpy as np
-import tmm as tmm
+import tmm_fast as tmm
+from scipy.integrate import trapezoid
+
 
 
 class TunnelIrradiance:
@@ -212,58 +214,109 @@ class TunnelIrradiance:
 
         return shaded_irradiance_frames
     
-    def t_grid(self, incident_grid, wavelengths, n_list, d_list, shading_exposure, solar_cell_exposure):
+    def t_grid(self, incident_grid, optical_wavelengths, n_list, d_list):
         
         t_grid_frames = []
 
         for i in range(len(incident_grid)):
             
             t_grid = np.empty(incident_grid[0].shape, dtype=object)
+            print(i)
 
             for j in range(t_grid.shape[0]):
-                for k in range(t_grid.shape[1]):
+                complex_array = np.array(n_list)  # Refractive index array
+                d_list = np.array(d_list)  # Thickness array
+                d_list = d_list.astype(np.float64)  # Convert from string to float
+                sun_incident = np.array(incident_grid[i][:, j])  # Ensure sun_incident is a numpy array
+                optical_wavelengths = np.array(optical_wavelengths) 
 
-                    tilt = np.abs(incident_grid[i][j][k])
+                    # Assuming complex_array is your refractive index array (N) and d_list is the thickness array (T)
+                N = np.array(complex_array, dtype=np.complex128)  # Convert N to numpy array
+                T = np.array(d_list, dtype=np.float64)  # Convert T to numpy array
 
-                    if tilt > (np.pi/2):
-                        tilt = np.pi/2
+                # Swap the axes of N to have shape [8, 38] instead of [38, 8]
+                N = np.swapaxes(N, 0, 1)  # Swap axes so that layers come first (N shape should be [8, 38])
 
-                    T_list = []
-                    if (solar_cell_exposure[j, k] == 1) and (shading_exposure[i][j, k] == 1):
-                        for l in range(len(wavelengths)):
-                            wavelength = wavelengths[l]
-                            n = n_list[l]
-                            coh_T = tmm.coh_tmm('p', n, d_list, tilt, wavelength)['T']
-                            T_list.append(coh_T)
-                        
-                        t_grid[j, k] = T_list
-                    
-                    else:
-                        t_grid[j,k] = np.zeros(len(wavelengths))
+                # Incident angles and wavelengths as numpy arrays
+                Theta = np.array(sun_incident, dtype=np.float64)  # Incident angles (Theta)
+                optical_wavelengths = np.array(optical_wavelengths, dtype=np.float64)  # Wavelengths
+
+                # If you were previously using torch-based functions, replace them with numpy equivalents or modify the function you're using accordingly.
+                O = tmm.coh_tmm('s', N, T, Theta, optical_wavelengths)  # Assuming vectmm.coh_tmm works with numpy arrays
+                t = O['T']  # Transmission amplitudes
             
-            t_grid_frames.append(t_grid)
+                for k in range(t.shape[0]):
+                    # t[k] is a 1D array of length 38
+                    t_grid[k, j] = t[k]
 
+        # Append the t_grid for this frame to the list of frames
+            t_grid_frames.append(t_grid)
+            
         return t_grid_frames
     
-    def solar_cells_irradiance_rays(self, irradiance_frames, solar_cell_exposure_maps, pol, n_list, d_list, incident_grid, wavelengths):
-
-        solar_cells_irradiance_frames = []
-        ground_shape = (len(irradiance_frames[0]), len(irradiance_frames[0][0]))
-        for i in range(len(irradiance_frames)):
-            irradiance_grid = np.zeros((ground_shape[0], ground_shape[1]))
-
-            for j in range(len(wavelengths)):
-                wavelength = wavelengths[j]
-                n_list_lam = np.array([1, n_list[j], 1])
-
-                for p in range(ground_shape[0]):
-                    for q in range(ground_shape[1]):
-                        tmm.coh_tmm(pol, n_list_lam, d_list, incident_grid)
-                        tau = 1
+    def solar_cells_irradiance_rays(self, solar_intensity_frames, t_grid_frames, solar_cell_exposure_maps):
+            # Initialize an empty list to store modified t_grid
+        modified_spectra_grid_frames = []
+        
+        # Loop through each frame in t_grid
+        for i in range(len(t_grid_frames)):
+            t_grid_frame = t_grid_frames[i]
+            # Initialize the modified t_grid for this frame
+            modified_t_grid = np.empty_like(t_grid_frame, dtype=object)
             
-            new_map = np.where(solar_cell_exposure_maps[i] == 1, irradiance_frames[i], 0)
-            solar_cells_irradiance_frames.append(new_map)
+            # Loop through each cell in the frame
+            for j in range(t_grid_frame.shape[0]):
+                for k in range(t_grid_frame.shape[1]):
+                    # Get the transmission array for the current cell
+                    transmittance = t_grid_frame[j, k]
+                    
+                    # Get the solar spectrum and exposure map values
+                    spectrum = solar_intensity_frames[i]
+                    exposure_map = solar_cell_exposure_maps[j, k]
+                    
+                    # Check if the exposure map has a 1 (i.e., apply the spectrum)
+                    if exposure_map == 1:
+                        # Multiply transmittance by the solar spectrum
+                        modified_t_grid[j, k] = transmittance * spectrum
+                    else:
+                        # Return the solar spectrum directly if exposure map is not 1
+                        modified_t_grid[j, k] = spectrum
+            
+            # Append the modified frame to the list
+            modified_spectra_grid_frames.append(modified_t_grid)
 
+        return modified_spectra_grid_frames
+    
+    def int_spectra(self, wavelengths, spectra_frames, ):
+        
+        int_frames = []
+
+        for i in range(len(spectra_frames)):
+            print(i)
+            grid_frame = spectra_frames[i]
+            # Initialize the modified t_grid for this frame
+            int_grid = np.empty_like(grid_frame, dtype=object)
+
+            for j in range(int_grid.shape[0]):
+                for k in range(int_grid.shape[1]):
+
+                    integral = trapezoid(spectra_frames[i][j][k], wavelengths, 0.01)
+
+                    int_grid[j, k] = integral
+
+            int_frames.append(int_grid)
+        
+        return int_frames
+                    
+
+
+                    
+        
+            
+
+
+
+        
 
 
 

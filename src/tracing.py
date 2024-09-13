@@ -189,24 +189,26 @@ class Tracing:
         df = pd.read_csv(file_path, skipinitialspace=True)
         
         # Extract relevant columns
-        wavelengths_nm = df["λ,n (nm)"].values
+        wavelengths_n_nm = df["λ,n (nm)"].values
+        wavelengths_k_nm = df["λ,n (nm)"].values
         n_data = df["n"].values
         k_data = df["k"].values
 
-        return wavelengths_nm, n_data, k_data
+        return wavelengths_n_nm, wavelengths_k_nm, n_data, k_data
     
     def spectrum_interpolation(self, wavelengths_sample, material):
 
-        wavelengths_data, n_data, k_data = self.read_nk_from_csv(material)
+        wavelengths_n_data, wavelengths_k_data, n_data, k_data = self.read_nk_from_csv(material)
 
         wavelengths_sample = np.array(wavelengths_sample)
-        wavelengths_data = np.array(wavelengths_data)
+        wavelengths_n_data = np.array(wavelengths_n_data)
+        wavelengths_k_data = np.array(wavelengths_k_data)
         n_data = np.array(n_data)
         k_data = np.array(k_data)
 
         # Perform interpolation
-        int_n_data = np.interp(wavelengths_sample, wavelengths_data, n_data)
-        int_k_data = np.interp(wavelengths_sample, wavelengths_data, k_data)
+        int_n_data = np.interp(wavelengths_sample, wavelengths_n_data, n_data)
+        int_k_data = np.interp(wavelengths_sample, wavelengths_k_data, k_data)
 
         complex_array = int_n_data + 1j * int_k_data
 

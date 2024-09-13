@@ -105,12 +105,12 @@ class Sun:
 
         return X_array, Y_array, Z_array
 
-    def get_spectra(self, tilt, integration_region_q1, integration_region_q2):
+    def get_spectra(self, integration_region_q1, integration_region_q2):
   # assumptions from the technical report:
         times = self.get_times()
         lat = self.latitude
         lon = self.longitude
-        tilt = tilt
+        tilt = 0
         azimuth = 180
         pressure = 101300  # sea level, roughly
         water_vapor_content = 0.5  # cm

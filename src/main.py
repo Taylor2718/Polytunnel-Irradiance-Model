@@ -10,7 +10,14 @@ import tmm as tmm
 import tmm_fast as vectmm
 import torch
 
+__all__ = ("compute_surface_grid",)
+
 #coh = tmm.coh_tmm()
+
+def compute_surface_grid():
+    """Returns the surface grid"""
+
+
 
 def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:59Z', latitude=51.1950, longitude=0.2757, res_minutes = 1, n_points = 1000, length = 20, radius = 5, xy_angle = 0, z_angle = 0, transmissivity = 1):
     
@@ -30,12 +37,12 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     surface_grid, solar_cells = tunnel.generate_surface()
     surface_grid_x, surface_grid_y = (surface_grid[0], surface_grid[1])
+    print(len(surface_grid_x))
 
     #surface_grid_l = tunnel_l.generate_surface()
     #surface_grid_r = tunnel_r.generate_surface()
     d = 2*radius
     
-
     distance_grid, separation_unit_vector_grid = tunnel.generate_distances_grid(ground_grid, surface_grid)
     time_array = sun.get_times()
 
@@ -43,29 +50,31 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     sun_positions = list(zip(altitude_array, azimuth_array))
     sun_vecs = sun.generate_sun_vecs(sun_positions)
     sun_incident = sun.sunvec_tilts_grid(sun_vecs, tilts_unit)
-    print(np.min(sun_incident))
-    print(len(sun_vecs))
 
     tracer = Tracing(tunnel, sun_vecs, surface_grid, tilts_unit, d, radius)
     gradient_grid, angle_grid, surface_gradient_grid, surface_angle_grid = tracer.find_tangent_gradient()
     solid_angle_grid = tracer.solid_angle_grid(angle_grid, surface_angle_grid)
 
     exposure_maps = irradiance.shading_exposure_map(angle_grid, surface_angle_grid, sun_vecs)
+    optical_wavelengths, optical_intensities, spectra_frames = sun.get_spectra(300, 700) #zero tilt
 
-    optical_wavelengths, optical_intensities, spectra_frames = sun.get_spectra(tilts_unit[0][0], 300, 700)
-    irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
-    shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
-    
-    ag_wavelengths, ag_n_data, ag_k_data = tracer.read_nk_from_csv('ag')
-    ag_n_sample, ag_k_sample, ag_n_list = tracer.spectrum_interpolation(optical_wavelengths, 'ag')
-    
     material_list = ['ag', 'moo3', 'zno', 'moo3', 'zno', 'ito']
-    d_list = np.array(['inf', 80, 7, 35, 15, 25, 110, 'inf'])
-    #d_list = np.array(['inf', 80, 'inf'])
-    #n_list = np.array([1, 1+0.2j, 1])
-    #coh = tmm.coh_tmm('p', n_list, d_list, -0.2, 400)
+    d_list = np.array(['inf', 30, 7, 35, 15, 25, 110, 'inf'])
+    complex_array = tracer.n_list_wavelength(material_list, optical_wavelengths)
+    #t_grid_frames = irradiance.t_grid(sun_incident, optical_wavelengths, complex_array, d_list)
+    #solar_cell_spectra = irradiance.solar_cells_irradiance_rays(optical_intensities, t_grid_frames, solar_cells)
+    #solar_cell_irradiance_frames = irradiance.int_spectra(optical_wavelengths, solar_cell_spectra)
+    #print(time_array[30])
+    #print(solar_cell_irradiance_frames[30])
+    irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
+    #shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
+    
+    #print(solar_cells)
+    #print(time_array[54])
+    #print(coh)
+    #print(coh['T'])
 
-    optical_wavelengths = np.linspace(300, 700, 400)
+    optical_wavelengths = np.linspace(300, 700, 1000)
 
     complex_array = tracer.n_list_wavelength(material_list, optical_wavelengths)
     print(complex_array[10])
@@ -84,7 +93,7 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     N = np.swapaxes(N, 0, 1)  # Swap axes so that layers come first (N shape should be [8, 38])
 
     # Incident angles and wavelengths as numpy arrays
-    Theta = np.array(sun_incident, dtype=np.float64)  # Incident angles (Theta)
+    Theta = np.linspace(-np.pi/2, np.pi/2, 1000)  # Incident angles (Theta)
     optical_wavelengths = np.array(optical_wavelengths, dtype=np.float64)  # Wavelengths
 
         # Check the shapes and data types after conversion
@@ -95,16 +104,18 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     # If you were previously using torch-based functions, replace them with numpy equivalents or modify the function you're using accordingly.
     O = vectmm.coh_tmm('s', N, T, Theta, optical_wavelengths)  # Assuming vectmm.coh_tmm works with numpy arrays
-    t = O['T']  # Transmission amplitudes
+    t = O['T']  # Transmission powers
+    t_amp = np.sqrt(t)
 
     # Output the shape of the result
     print(t.shape)
     print(np.max(t))
-    
+    print(np.max(t_amp))
+
     plt.figure(figsize=(8, 6))
 
     # Create a heatmap using pcolormesh
-    plt.pcolormesh(optical_wavelengths, Theta, t, cmap='viridis', shading='auto', vmin=0, vmax=np.max(t))
+    plt.pcolormesh(optical_wavelengths, Theta, t_amp, cmap='viridis', shading='auto', vmin=0, vmax=np.max(t_amp))
 
     # Add a color bar to show the transmission amplitude scale (0 to 1)
     cbar = plt.colorbar()
@@ -121,12 +132,6 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     # Display the plot
     plt.show()
-    #t_grid_frames = irradiance.t_grid(sun_incident, optical_wavelengths, complex_array, d_list, exposure_maps, solar_cells)
-    #print(solar_cells)
-    #print(time_array[54])
-    #print(t_grid_frames[54])
-    #print(coh)
-    #print(coh['T'])
     
     #diffuse_irradiance_frames = irradiance.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
     #direct_irradiance_frames = irradiance.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
@@ -144,7 +149,7 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
     
-    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, shaded_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
+    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, direct_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
     
     #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
 

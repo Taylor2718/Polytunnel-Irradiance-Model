@@ -3,7 +3,6 @@ from matplotlib.animation import FuncAnimation
 import numpy as np
 from datetime import timedelta
 
-
 def round_10_min(dt):
     # Find the number of minutes past the hour
     minutes = dt.minute
@@ -182,4 +181,28 @@ def plot_coverage(surface_grid, visible_solid_angle):
     plt.ylabel('Y')
     plt.title('Visible Sky Coverage on Central Polytunnel')
     plt.show()
+
+def tmm_grid(optical_wavelengths, Theta, t_amp):
+    
+    plt.figure(figsize=(8, 6))
+
+    # Create a heatmap using pcolormesh
+    plt.pcolormesh(optical_wavelengths, Theta, t_amp, cmap='viridis', shading='auto', vmin=0, vmax=np.max(t_amp))
+
+    # Add a color bar to show the transmission amplitude scale (0 to 1)
+    cbar = plt.colorbar()
+    cbar.set_label('Transmission Amplitude')
+
+    # Label the axes
+    plt.xlabel('Wavelength (nm)')
+    plt.ylabel('Tilt Angle (Radians)')
+
+    # Set a title for the plot
+    plt.title('TMM of Transmission Amplitudes for Tilt Angles and Wavelengths')
+
+    plt.savefig('figures/tmm-transmission.png', dpi=300)
+
+    # Display the plot
+    plt.show()
+    
 

@@ -1,8 +1,7 @@
 import numpy as np
 import tmm_fast as tmm
 from scipy.integrate import trapezoid
-
-
+import tracing as tracer
 
 class TunnelIrradiance:
     def __init__(self, polytunnel, radius, length):
@@ -213,6 +212,31 @@ class TunnelIrradiance:
             shaded_irradiance_frames.append(new_map)
 
         return shaded_irradiance_frames
+    
+    def eg_t_grid(self, material_list, d_list):
+        
+        optical_wavelengths = np.linspace(300, 700, 1000)
+        Theta = np.linspace(-np.pi/2, np.pi/2, 1000)  # Incident angles (Theta)
+        complex_array = tracer.n_list_wavelength(material_list, optical_wavelengths)
+        optical_wavelengths = np.array(optical_wavelengths, dtype=np.float64)  # Wavelengths
+
+        complex_array = np.array(complex_array)  # Refractive index array
+        d_list = np.array(d_list)  # Thickness array
+        d_list = d_list.astype(np.float64)  # Convert from string to float
+        sun_incident = np.array(sun_incident[72][:, 0])  # Ensure sun_incident is a numpy array
+        optical_wavelengths = np.array(optical_wavelengths) 
+
+        N = np.array(complex_array, dtype=np.complex128)  # Convert N to numpy array
+        T = np.array(d_list, dtype=np.float64)  # Convert T to numpy array
+        N = np.swapaxes(N, 0, 1)  # Swap axes so that layers come first (N shape should be [8, 38])
+
+        O = tmm.coh_tmm('s', N, T, Theta, optical_wavelengths)  # Assuming vectmm.coh_tmm works with numpy arrays
+        t = O['T']  # Transmission powers
+        r = O['R'] #Reflection powers
+        t_amp = np.sqrt(t)
+        r_amp = np.sqrt(r)
+
+        return t_amp, r_amp
     
     def t_grid(self, incident_grid, optical_wavelengths, n_list, d_list):
         

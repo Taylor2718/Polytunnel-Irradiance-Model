@@ -21,12 +21,12 @@ def compute_surface_grid():
 
 def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:59Z', latitude=51.1950, longitude=0.2757, res_minutes = 1, n_points = 1000, length = 20, radius = 5, xy_angle = 0, z_angle = 0, transmissivity = 1):
     
-    tunnel = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle, theta_margin = 3, cell_thickness=1, cell_gap=2)
+    tunnel = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle, theta_margin = 6, cell_thickness=2, cell_gap=8)
     tunnel_l = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle, x_shift = 3.0)
     tunnel_r = Polytunnel(radius=radius, length=length, n_points=n_points, xy_angle=xy_angle, z_angle=z_angle, x_shift = -3.0)
 
     ground_grid = tunnel.generate_ground_grid()
-    ground_grid_x, ground_grid_y = (ground_grid[0], ground_grid[1])
+    ground_grid_x, ground_grid_y, ground_grid_z = (ground_grid[0], ground_grid[1], ground_grid[2])
 
     sun = Sun(start_time=start_time_str, end_time=end_time_str, latitude=latitude, longitude=longitude, resolution_minutes=res_minutes)
     altitude_array, azimuth_array = sun.generate_sun_positions()
@@ -36,8 +36,10 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     tilts_unit = tunnel.surface_tilt(normals_unit_surface)
 
     surface_grid, solar_cells = tunnel.generate_surface()
-    surface_grid_x, surface_grid_y = (surface_grid[0], surface_grid[1])
+    surface_grid_x, surface_grid_y, surface_grid_z = (surface_grid[0], surface_grid[1], surface_grid[2])
     print(len(surface_grid_x))
+
+    print(surface_grid[0][1][0])
 
     #surface_grid_l = tunnel_l.generate_surface()
     #surface_grid_r = tunnel_r.generate_surface()
@@ -61,13 +63,13 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     material_list = ['ag', 'moo3', 'pce10:pc61bm', 'zno', 'moo3', 'pdbt[2f]t:pc71bm', 'zno', 'ito']
     d_list = np.array(['inf', 30, 7, 70, 35, 15, 100, 25, 110, 'inf'])
     complex_array = tracer.n_list_wavelength(material_list, optical_wavelengths)
-    #t_grid_frames = irradiance.t_grid(sun_incident, optical_wavelengths, complex_array, d_list)
-    #solar_cell_spectra = irradiance.solar_cells_irradiance_rays(optical_intensities, t_grid_frames, solar_cells)
-    #solar_cell_irradiance_frames = irradiance.int_spectra(optical_wavelengths, solar_cell_spectra)
+    t_grid_frames = irradiance.t_grid(sun_incident, optical_wavelengths, complex_array, d_list)
+    solar_cell_spectra = irradiance.solar_cells_irradiance_rays(optical_intensities, t_grid_frames, solar_cells)
+    solar_cell_irradiance_frames = irradiance.int_spectra(optical_wavelengths, solar_cell_spectra)
     #print(time_array[30])
     #print(solar_cell_irradiance_frames[30])
     irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
-    #shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
+    shaded_irradiance_frames = irradiance.shaded_irradiance_rays(irradiance_frames, exposure_maps)
     
     #print(solar_cells)
     #print(time_array[54])
@@ -86,11 +88,11 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
 
     #viz.plot_sun(time_array, altitude_array, azimuth_array, spectra_frames, "figures/sun.png")
 
-    #viz.plot_surface(surface_grid_x, surface_grid_y, surface_grid_z, normals_unit_surface, ground_grid_x, ground_grid_y, ground_grid_z, normals_unit_ground, sun_vec=sun_vecs[72])
+    #viz.plot_surface(surface_grid_x, surface_grid_y, surface_grid_z, normals_unit_surface, ground_grid_x, ground_grid_y, ground_grid_z, normals_unit_ground, sun_vec=sun_vecs[2])
 
     #viz.plot_irradiance(surface_grid_x, surface_grid_y, irradiance_frames[60])
-    
-    #viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, direct_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
+
+    viz.animate_irradiance(time_array, surface_grid_x, surface_grid_y, solar_cell_irradiance_frames, "figures/direct-irradiance-surface-animation.mp4")
     
     #viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_irradiance_frames, "figures/diffuse-irradiance-ground-animation.mp4")
 

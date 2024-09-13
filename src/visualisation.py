@@ -99,10 +99,10 @@ def plot_surface(X, Y, Z, normals_unit, X_ground, Y_ground, Z_ground, normals_un
 
     # Plot normal vectors
     ax.quiver(X_ground, Y_ground, Z_ground, U_ground, V_ground, W_ground, length=1, color='green')
-    #ax.quiver(X, Y, Z, U, V, W, length=1, color='black')
+    ax.quiver(X, Y, Z, U, V, W, length=1, color='black')
 
     # Plot sun rays
-    #ax.quiver(X, Y, Z, sun_dir_x, sun_dir_y, sun_dir_z, color='red')
+    ax.quiver(X, Y, Z, sun_dir_x, sun_dir_y, sun_dir_z, color='red')
 
     # Remove grid and axes
     ax.grid(False)
@@ -129,6 +129,8 @@ def plot_irradiance(ground_grid_x, ground_grid_y, irradiance_array):
 def animate_irradiance(time_array, ground_grid_x, ground_grid_y, irradiance_array, filename):
     # Create a figure and axis
     fig, ax = plt.subplots(figsize=(10, 5))
+    irradiance_array = np.array(irradiance_array, dtype=np.float64)
+    irradiance_array = np.nan_to_num(irradiance_array, nan=0.0, posinf=0.0, neginf=0.0)
 
    # Find the global min and max of the irradiance array
     irradiance_min = 0

@@ -214,7 +214,7 @@ class TunnelIrradiance:
         return shaded_irradiance_frames
     
     def eg_t_grid(self, material_list, d_list):
-        
+
         optical_wavelengths = np.linspace(300, 700, 1000)
         Theta = np.linspace(-np.pi/2, np.pi/2, 1000)  # Incident angles (Theta)
         complex_array = tracer.n_list_wavelength(material_list, optical_wavelengths)
@@ -267,11 +267,12 @@ class TunnelIrradiance:
 
                 # If you were previously using torch-based functions, replace them with numpy equivalents or modify the function you're using accordingly.
                 O = tmm.coh_tmm('s', N, T, Theta, optical_wavelengths)  # Assuming vectmm.coh_tmm works with numpy arrays
-                t = O['T']  # Transmission amplitudes
+                t = O['T']  # Transmission power
+                t_amp = np.sqrt(t) #Transmission amplitude
             
                 for k in range(t.shape[0]):
                     # t[k] is a 1D array of length 38
-                    t_grid[k, j] = t[k]
+                    t_grid[k, j] = t_amp[k]
 
         # Append the t_grid for this frame to the list of frames
             t_grid_frames.append(t_grid)
@@ -311,7 +312,7 @@ class TunnelIrradiance:
 
         return modified_spectra_grid_frames
     
-    def int_spectra(self, wavelengths, spectra_frames, ):
+    def int_spectra(self, wavelengths, spectra_frames):
         
         int_frames = []
 

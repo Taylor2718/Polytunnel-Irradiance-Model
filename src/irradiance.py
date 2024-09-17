@@ -2,6 +2,8 @@ import numpy as np
 import tmm_fast as tmm
 from scipy.integrate import trapezoid
 import tracing as tracer
+import os
+import pandas as pd
 
 class TunnelIrradiance:
     def __init__(self, polytunnel, radius, length):
@@ -213,6 +215,56 @@ class TunnelIrradiance:
 
         return shaded_irradiance_frames
     
+    def shaded_irradiance_spectra(self, irradiance_frames_spectra, shaded_exposure_maps):
+
+       shaded_irradiance_frames = np.zeros_like(irradiance_frames_spectra)
+       # Iterate over the indices of irradiance_frames_spectra and shaded_exposure_maps
+       for i in range(len(irradiance_frames_spectra)):
+           for j in range(len(irradiance_frames_spectra[i])):
+                for k in range(len(irradiance_frames_spectra[i][j])):
+                    
+                    if shaded_exposure_maps[i][j][k] == 1:
+                        # If exposure map is 1, copy the entire array at irradiance_frames_spectra[i][j][k]
+                        shaded_irradiance_frames[i][j][k] = irradiance_frames_spectra[i][j][k]
+                    
+                    else:
+                        # If exposure map is 0, store an array of zeros with the same shape as irradiance_frames_spectra[i][j][k]
+                        shaded_irradiance_frames[i][j][k] = np.zeros_like(irradiance_frames_spectra[i][j][k])
+
+       return shaded_irradiance_frames
+    
+    def transmitted_absorbed_spectra(self, wavelengths_sample, spectra):
+
+        # L# Read CSV file into a DataFrame
+        file_path = os.path.join('..', 'data', 'polyethene-transmission.csv')
+        df = pd.read_csv(file_path, skipinitialspace=True)
+        
+        # Extract relevant columns
+        wavelengths_n_nm = df["λ,n (nm)"].values
+        t= df["t"].values
+
+        wavelengths_sample = np.array(wavelengths_sample)
+        wavelengths_n_nm = np.array(wavelengths_n_nm)
+        t = np.array(t)
+        a = 1-t
+
+        # Perform interpolation
+        int_t_data = np.interp(wavelengths_sample, wavelengths_n_nm, t)
+        int_a_data = np.interp(wavelengths_sample, wavelengths_n_nm, a)
+
+        transmitted_spectra = np.zeros_like(spectra)
+        absorbed_spectra = np.zeros_like(spectra)
+        
+        # Iterate over the indices of irradiance_frames_spectra and shaded_exposure_maps
+        for i in range(len(spectra)):
+            for j in range(len(spectra[i])):
+                    for k in range(len(spectra[i][j])):
+                        # If exposure map is 1, copy the entire array at irradiance_frames_spectra[i][j][k]
+                        transmitted_spectra[i][j][k] = spectra[i][j][k] * int_t_data
+                        absorbed_spectra[i][j][k] = spectra[i][j][k] * int_a_data
+
+        return transmitted_spectra, absorbed_spectra
+
     def eg_t_grid(self, material_list, d_list):
 
         optical_wavelengths = np.linspace(300, 700, 1000)

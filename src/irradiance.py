@@ -63,7 +63,6 @@ class TunnelIrradiance:
 
         return exposure_maps
 
-    
     def diffuse_irradiance_ground(self, distances_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, surface_areas, irradiance_frames, transmissivity):
 
         diffuse_irradiance_frames = []
@@ -233,7 +232,7 @@ class TunnelIrradiance:
 
        return shaded_irradiance_frames
     
-    def transmitted_absorbed_spectra(self, wavelengths_sample, spectra):
+    def transmitted_absorbed_spectra(self, wavelengths_sample, spectra, scalar_grid):
 
         # L# Read CSV file into a DataFrame
         file_path = os.path.join('..', 'data', 'polyethene-transmission.csv')
@@ -260,8 +259,8 @@ class TunnelIrradiance:
             for j in range(len(spectra[i])):
                     for k in range(len(spectra[i][j])):
                         # If exposure map is 1, copy the entire array at irradiance_frames_spectra[i][j][k]
-                        transmitted_spectra[i][j][k] = spectra[i][j][k] * int_t_data
-                        absorbed_spectra[i][j][k] = spectra[i][j][k] * int_a_data
+                        transmitted_spectra[i][j][k] = spectra[i][j][k] * int_t_data * scalar_grid[i][j][k]
+                        absorbed_spectra[i][j][k] = spectra[i][j][k] * int_a_data * scalar_grid[i][j][k]
 
         return transmitted_spectra, absorbed_spectra
 
@@ -297,7 +296,6 @@ class TunnelIrradiance:
         for i in range(len(incident_grid)):
             
             t_grid = np.empty(incident_grid[0].shape, dtype=object)
-            print(i)
 
             for j in range(t_grid.shape[0]):
                 complex_array = np.array(n_list)  # Refractive index array
@@ -364,12 +362,126 @@ class TunnelIrradiance:
 
         return modified_spectra_grid_frames
     
+    def direct_irradiance_spectra_ground(self, ground_grid, normals_unit_ground, surface_grid, distances_grid, sun_vecs, transmitted_spectra_frames):
+            
+        ground_shape = (len(distances_grid), len(distances_grid[0]))
+        irradiance_traced = []
+
+        for i in range(len(transmitted_spectra_frames)):
+            irradiance_grid = np.zeros(ground_shape, dtype=object)
+
+            # Calculate intersections and closest points
+            for j in range(ground_shape[0]):
+                for k in range(ground_shape[1]):
+                    # Get ground point
+                    x_g = ground_grid[0][j][k]
+                    y_g = ground_grid[1][j][k]
+                    z_g = ground_grid[2][j][k]
+
+                    # Normalize sun vector
+                    sun_vec = np.array(sun_vecs[i])
+                    sun_vec = sun_vec / np.linalg.norm(sun_vec)
+
+                    # Compute t for intersection with the cylindrical surface
+                    a = sun_vec[0]**2 + sun_vec[2]**2
+                    b = 2 * (x_g * sun_vec[0] + z_g * sun_vec[2])
+                    c = x_g**2 + z_g**2 - self.radius**2
+
+                    discriminant = b**2 - 4 * a * c
+
+                    if discriminant >= 0:
+                        t1 = (-b + np.sqrt(discriminant)) / (2 * a)
+                        t2 = (-b - np.sqrt(discriminant)) / (2 * a)
+                        
+                        # Choose the correct t (positive and smallest)
+                        t = min(t1, t2) if min(t1, t2) > 0 else max(t1, t2)
+                        
+                        # Calculate intersection point on the cylindrical surface
+                        x_int = x_g + t * sun_vec[0]
+                        y_int = y_g + t * sun_vec[1]
+                        z_int = z_g + t * sun_vec[2]
+
+                        # Check if the intersection is within the tunnel bounds
+                        if -self.length <= y_int <= self.length:
+                            # Find the closest surface grid point
+                            distances = np.sqrt((surface_grid[0] - x_int)**2 + 
+                                                (surface_grid[1] - y_int)**2 + 
+                                                (surface_grid[2] - z_int)**2)
+                            closest_j, closest_k = np.unravel_index(np.argmin(distances), distances.shape)
+                            irradiance_array = transmitted_spectra_frames[i][closest_j][closest_k]
+                        else:
+                            irradiance_array = np.zeros_like(transmitted_spectra_frames[i][closest_j][closest_k])
+
+                    else:
+                        irradiance_array = np.zeros_like(transmitted_spectra_frames[i][closest_j][closest_k])
+
+                    # Apply transmissivity and set the irradiance in the grid
+                    irradiance_grid[j][k] = irradiance_array * np.dot(sun_vecs[i], normals_unit_ground[:, j, k])
+
+            irradiance_traced.append(irradiance_grid)
+                    
+        return irradiance_traced
+    
+    def diffuse_irradiance_spectra_ground(self, distances_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, surface_areas, irradiance_frames):
+
+        diffuse_irradiance_frames = []
+
+        ground_shape = (len(distances_grid), len(distances_grid[0]))
+        
+        for j in range(len(irradiance_frames)):
+            irradiance_ground = np.zeros(ground_shape, dtype=object)
+
+            # Iterate over each point on the ground grid
+            for p in range(ground_shape[0]):
+                for q in range(ground_shape[1]):
+                    
+                    total_irradiance = 0.0
+                    
+                    # Iterate over each point on the surface grid
+                    surface_shape = irradiance_frames[j].shape
+                    for k in range(surface_shape[0]):
+                        for l in range(surface_shape[1]):
+                            # Sum the irradiance contribution from each surface point
+                            distance = distances_grid[p][q][k][l]
+                            ground_projection = np.dot(normals_unit_ground[:, p, q], separation_unit_vector_grid[p][q][k][l])
+                            surface_projection = np.dot(normals_unit_surface[:, k, l], separation_unit_vector_grid[p][q][k][l])
+
+                            irradiance = ground_projection * surface_projection * surface_areas[k][l] * irradiance_frames[j][k][l] / (2*np.pi*(distance)**2)
+                            total_irradiance += irradiance
+                    
+                    # Store the result in the irradiance_ground array
+                    irradiance_ground[p][q] = total_irradiance
+        
+            diffuse_irradiance_frames.append(irradiance_ground)
+
+        return diffuse_irradiance_frames
+
+    def global_irradiance_spectra_ground(self, direct_irradiance_spectra_ground, diffuse_irradiance_spectra_ground):
+
+        global_irradiance_frames = []
+        global_photon_frames = []
+        
+        ground_shape = (len(direct_irradiance_spectra_ground[0]), len(direct_irradiance_spectra_ground[0][0]))
+        
+        for i in range(len(direct_irradiance_spectra_ground)):
+            irradiance_ground = np.zeros(ground_shape, dtype=object)
+
+            for p in range(ground_shape[0]):
+                for q in range(ground_shape[1]):
+
+                    total_irradiance = direct_irradiance_spectra_ground[i][p][q] + diffuse_irradiance_spectra_ground[i][p][q]
+
+                    irradiance_ground[p][q] = total_irradiance
+
+            global_irradiance_frames.append(irradiance_ground)
+
+        return global_irradiance_frames
+
     def int_spectra(self, wavelengths, spectra_frames):
         
         int_frames = []
 
         for i in range(len(spectra_frames)):
-            print(i)
             grid_frame = spectra_frames[i]
             # Initialize the modified t_grid for this frame
             int_grid = np.empty_like(grid_frame, dtype=object)

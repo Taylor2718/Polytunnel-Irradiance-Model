@@ -104,8 +104,6 @@ class Tracing:
 
         x_values = self.surface_grid[0][:, 0]  # x values for the first cross-section
         z_values = self.surface_grid[2][:, 0]  # z values for the first cross-section
-
-        print(self.d, self.R)
         
         # Calculate the gradient for each x, z pair in the first cross-section
         for i in range(len(x_values)):

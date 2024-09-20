@@ -71,10 +71,12 @@ class Sun:
     def sunvec_tilts_grid(self, sun_vecs, normals_grid):
         
         angle_grid_frames = []
+        scalar_grid_frames = []
 
         for i in range(len(sun_vecs)):
             sun_vec = sun_vecs[i]
 
+            scalar_grid = np.zeros((len(normals_grid[0]), len(normals_grid[0][0])))
             angle_grid = np.zeros((len(normals_grid[0]), len(normals_grid[0][0])))
 
             # Iterate through each (i, j) index in the normals_grid
@@ -84,11 +86,13 @@ class Sun:
                     vec = np.array([normals_grid[0][j][k], normals_grid[1][j][k], normals_grid[2][j][k]])
                     scalar = np.dot(sun_vec, vec)
                     scalar = np.clip(scalar, -1.0, 1.0)
+                    scalar_grid[j][k] = scalar
                     angle_grid[j][k] = np.arccos(scalar)
 
+            scalar_grid_frames.append(scalar_grid)
             angle_grid_frames.append(angle_grid)
 
-        return angle_grid_frames
+        return scalar_grid_frames, angle_grid_frames
     
     def generate_sun_vec_grids(self, sun_vecs, surface_grid, distance_array):
         

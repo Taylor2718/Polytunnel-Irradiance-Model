@@ -476,6 +476,49 @@ class TunnelIrradiance:
             global_irradiance_frames.append(irradiance_ground)
 
         return global_irradiance_frames
+    
+    def power_to_photon_spectra(self, wavelengths_sample, power_spectra):
+
+        photon_spectra = np.zeros_like(power_spectra) #demand photon spectra
+        h = 6.63e-34
+        c = 3e8
+        N = 6.02e23
+        
+        # Iterate over the indices of irradiance_frames_spectra and shaded_exposure_maps
+        for i in range(len(power_spectra)):
+            for j in range(len(power_spectra[i])):
+                    for k in range(len(power_spectra[i][j])):
+                        # If exposure map is 1, copy the entire array at irradiance_frames_spectra[i][j][k]
+                        photon_spectra[i][j][k] = power_spectra[i][j][k] * (wavelengths_sample/h*c) * N * 1e6
+
+        return photon_spectra
+    
+    def par_spectra(self, wavelengths_sample, photon_spectra):
+
+        # L# Read CSV file into a DataFrame
+        file_path = os.path.join('..', 'data', 'PAR-quantum-yield-spectrum-Inada-1976.csv')
+        df = pd.read_csv(file_path, skipinitialspace=True)
+        
+        # Extract relevant columns
+        wavelengths_n_nm = df["λ,n (nm)"].values
+        par= df["PAS"].values
+
+        wavelengths_sample = np.array(wavelengths_sample)
+        par = np.array(par)
+
+        # Perform interpolation
+        int_par_data = np.interp(wavelengths_sample, wavelengths_n_nm, par)
+
+        par_ammended_spectra = np.zeros_like(photon_spectra) #demand photon spectra
+        
+        # Iterate over the indices of irradiance_frames_spectra and shaded_exposure_maps
+        for i in range(len(photon_spectra)):
+            for j in range(len(photon_spectra[i])):
+                    for k in range(len(photon_spectra[i][j])):
+                        # If exposure map is 1, copy the entire array at irradiance_frames_spectra[i][j][k]
+                        par_ammended_spectra[i][j][k] = photon_spectra[i][j][k] * int_par_data
+
+        return par_ammended_spectra
 
     def int_spectra(self, wavelengths, spectra_frames):
         

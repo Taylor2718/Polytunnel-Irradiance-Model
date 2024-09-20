@@ -1,5 +1,4 @@
-﻿Wavelength,Normalized1,Normalized2
-,"Normalize to [0, 1] of D","Normalize to [0, 1] of ""Plant Action Spec"""
+﻿"λ,n (nm)", D, PAS
 300,0,0.259779544
 300.5,1.69E-05,0.260146629
 301,7.57E-05,0.260513714

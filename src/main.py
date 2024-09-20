@@ -79,7 +79,11 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     global_ground_irradiance_frames = irradiance.global_irradiance_spectra_ground(diffuse_ground_irradiance_frames, direct_ground_irradiance_frames)
     global_ground_int = irradiance.int_spectra(optical_wavelengths, global_ground_irradiance_frames)
 
-    irradiance_frames = irradiance.irradiance_rays(normals_unit_surface, sun_positions, sun_vecs, spectra_frames)
+    #Photon spectra PAR#
+    photon_spectra_frames = irradiance.power_to_photon_spectra(optical_wavelengths, global_ground_irradiance_frames)
+    photon_par_spectra = irradiance.par_spectra(optical_wavelengths, photon_spectra_frames)
+    photon_par = irradiance.int_spectra(photon_par_spectra)
+
     #diffuse_irradiance_frames = irradiance.diffuse_irradiance_ground(distance_grid, separation_unit_vector_grid, normals_unit_ground, normals_unit_surface, areas_surface, irradiance_frames, transmissivity)
     #direct_irradiance_frames = irradiance.direct_irradiance_ground(normals_unit_ground, sun_vecs, spectra_frames, transmissivity)
 
@@ -101,6 +105,8 @@ def main(start_time_str='2024-07-30T00:00:00Z', end_time_str='2024-07-30T23:59:5
     viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, diffuse_ground_int, "figures/diffuse-irradiance-ground-animation.mp4")
 
     viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, global_ground_int, "figures/global-irradiance-ground-animation.mp4")
+
+    viz.animate_irradiance(time_array, ground_grid_x, ground_grid_y, photon_par, "figures/photon-par-animation.mp4")
 
     #viz.plot_power(time_array, power_total_ground_diffuse, power_total_ground_direct, power_total_out, 'figures/power-received.png')
     
